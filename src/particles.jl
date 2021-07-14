@@ -13,6 +13,7 @@ struct Molecule
     dissociation_energy::Float64
     formation_energy::Float64
     vibr_energy0::Float64
+    vibr_energy1::Float64
 
     rotational_symmetry::UInt8
     
@@ -20,6 +21,8 @@ struct Molecule
     anharmonic::Bool
     use_Treanor::Bool
     continue_Treanor_with_Boltzmann::Bool  # if Tv>T, do we continue the Treanor distribution with a Boltzmann one?
+    frequency::Float64
+    anharmonic_ratio::Float64
 
     degeneracy::UInt8
 
@@ -28,6 +31,7 @@ struct Molecule
 
     vibrational_levels::Array{Float64,1}
     vibrational_levels_mult1::Array{Float64,1}
+    vibrational_levels_mult_energy::Array{Float64,1}
     vibrational_energy::Array{Float64,1}
 
     rotational_energy::Array{Float64,1}
@@ -73,9 +77,11 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
     wexe = 0.0
     weye = 0.0
     weze = 0.0
+    anharmonic_ratio = 0.0
 
     if anharmonic
         wexe = data[name]["wexe, m^-1"][1]
+        anharmonic_ratio = wexe / we
 
         if !simplified_anharmonic
             weye = data[name]["weye, m^-1"][1]
@@ -116,6 +122,7 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
     ve_arr .-= ve0
 
     vl_x1_arr = vl_arr .* ve_arr[2]
+    vl_xve_arr = vl_arr .* ve_arr
 
     rot_be = data[name]["Be, m^-1"][1]
 
@@ -156,6 +163,6 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
         cont_Tr_B = false
     end
 
-    return Molecule(name, mass, dissociation_energy, fe, ve0, rotational_symmetry, anharmonic, use_Tr, cont_Tr_B,
-                    degeneracy, n_vibr, n_rot, vl_arr, vl_x1_arr, ve_arr, re_arr, rd_arr)
+    return Molecule(name, mass, dissociation_energy, fe, ve0, ve_arr[2], rotational_symmetry, anharmonic, use_Tr, cont_Tr_B,
+                    we, anharmonic_ratio, degeneracy, n_vibr, n_rot, vl_arr, vl_x1_arr, vl_xve_arr, ve_arr, re_arr, rd_arr)
 end
