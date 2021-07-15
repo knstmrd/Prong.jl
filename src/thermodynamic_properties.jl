@@ -2,7 +2,7 @@ include("utils.jl")
 
 
 function compute_Z_vibr(mol::Molecule, T::Float64, Tv::Float64)
-    if mol.anharmonic == false
+    if mol.anharmonic == false || !mol.use_Treanor
         return sum(exp.(-mol.vibrational_energy ./ (constants.k * Tv)))
     else
         if T >= Tv
@@ -32,7 +32,7 @@ function compute_Z_rot(mol::Molecule, T::Float64)
 end
 
 function compute_E_vibr(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64)
-    if mol.anharmonic == false
+    if mol.anharmonic == false || !mol.use_Treanor
         Ev = sum(mol.vibrational_energy .* exp.(-mol.vibrational_energy ./ (constants.k * Tv)))
     else
         if T >= Tv
@@ -63,7 +63,7 @@ function compute_E_rot(mol::Molecule, T::Float64, Zr::Float64)
 end
 
 function compute_c_vibrT(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
-    if mol.anharmonic == false
+    if mol.anharmonic == false || !mol.use_Treanor
         return 0.0
     else
         if T >= Tv
@@ -105,24 +105,18 @@ end
 
 
 function compute_c_vibrTv(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
-    if mol.anharmonic == false
-
-        avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_levels_mult1 ./ (constants.k * Tv)))
+    if mol.anharmonic == false || !mol.use_Treanor
+        avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (constants.k * Tv)))
         avg_evib_sq /= Zv
         return (avg_evib_sq - Ev^2) / (constants.k * Tv^2 * mol.mass)
     else
         if T >= Tv
-            # avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(-(mol.vibrational_energy .- mol.vibrational_levels_mult1) ./ (constants.k * T)
-            #          .- mol.vibrational_levels_mult1 ./ (constants.k * Tv)))
             avg_i = sum(mol.vibrational_levels .* exp.(-(mol.vibrational_energy .- mol.vibrational_levels_mult1) ./ (constants.k * T)
             .- mol.vibrational_levels_mult1 ./ (constants.k * Tv)))
             avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* exp.(-(mol.vibrational_energy .- mol.vibrational_levels_mult1) ./ (constants.k * T)
             .- mol.vibrational_levels_mult1 ./ (constants.k * Tv)))
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
-
-            # avg_evib_sq = sum(mol.vibrational_energy[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp.(-(mol.vibrational_energy[1:maxlevel] .- mol.vibrational_levels_mult1[1:maxlevel]) ./ (constants.k * T)
-            # .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
 
             avg_i = sum(mol.vibrational_levels[1:maxlevel] .* exp.(-(mol.vibrational_energy[1:maxlevel] .- mol.vibrational_levels_mult1[1:maxlevel]) ./ (constants.k * T)
             .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
@@ -140,16 +134,10 @@ function compute_c_vibrTv(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, E
         end
     end
 
-    # avg_evib_sq /= Zv
     avg_i /= Zv
     avg_i_ve /= Zv
 
-    # vibr_energy[1]*(p_avg_vibr_i_energy(T, T1, vibr_energy, num_vibr_levels)
-	#                   - p_avg_vibr_i(T, T1, vibr_energy, num_vibr_levels) * 
- 	# 		    p_avg_vibr_energy(T, T1, vibr_energy, num_vibr_levels)) )/(K_CONST_K * K_CONST_K * T1 * T1);
-
     return mol.vibr_energy1 * (avg_i_ve - avg_i * Ev) / (constants.k * Tv^2 * mol.mass)
-    # return (avg_evib_sq - Ev^2 + mol.vibr_energy1 * avg_i * Ev - mol.vibr_energy1 * avg_i_ve) / (constants.k * T^2 * mol.mass)
 end
 
 function compute_c_rot(mol::Molecule, T::Float64, Zr::Float64, Er::Float64)
