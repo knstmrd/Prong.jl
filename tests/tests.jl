@@ -63,8 +63,6 @@ end
         mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
         for T in [500.0, 5000.0, 20000.0]
             for Tv in [500.0, 5000.0, 20000.0]
-        # for T in [500.0, 1000.0, 2500.0, 5000.0, 10000.0, 15000.0]
-        #     for Tv in [500.0, 1000.0, 2500.0, 5000.0, 10000.0, 15000.0]
                 Zv = compute_Z_vibr(mol, T, Tv)
                 Ev = compute_E_vibr(mol, T, Tv, Zv)
                 c_vibrT = compute_c_vibrT(mol, T, Tv, Zv, Ev)
@@ -94,7 +92,6 @@ end
 
 
     for molname in ["N2", "O2", "NO"]
-
         for continue_Treanor_with_Boltzmann in [true, false]
             mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true, continue_Treanor_with_Boltzmann=continue_Treanor_with_Boltzmann)
             for T in [500.0, 5000.0, 20000.0]
@@ -118,9 +115,37 @@ end
                     Zvp = compute_Z_vibr(mol, T, Tv + ΔT)
                     Evp = compute_E_vibr(mol, T, Tv + ΔT, Zvp) / mol.mass
 
-                    # println(molname, "; T=", T, "; Tv=", Tv, ": ", c_vibrTv, ", ", (Evp - Evm) / (2 * ΔT))
                     @test true == isapprox(c_vibrTv, (Evp - Evm) / (2 * ΔT), rtol=rtol)
                 end
+            end
+        end
+    end
+
+
+    for molname in ["N2", "O2", "NO"]
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true, use_Treanor=false)
+        for T in [500.0, 5000.0, 20000.0]
+            for Tv in [500.0, 5000.0, 20000.0]
+                Zv = compute_Z_vibr(mol, T, Tv)
+                Ev = compute_E_vibr(mol, T, Tv, Zv)
+                c_vibrT = compute_c_vibrT(mol, T, Tv, Zv, Ev)
+                c_vibrTv = compute_c_vibrTv(mol, T, Tv, Zv, Ev)
+
+
+                Zvm = compute_Z_vibr(mol, T - ΔT, Tv)
+                Evm = compute_E_vibr(mol, T - ΔT, Tv, Zvm) / mol.mass
+                Zvp = compute_Z_vibr(mol, T + ΔT, Tv)
+                Evp = compute_E_vibr(mol, T + ΔT, Tv, Zvp) / mol.mass
+
+                @test c_vibrT <= 0.0
+                @test true == isapprox(c_vibrT, (Evp - Evm) / (2 * ΔT), rtol=rtol)
+
+                Zvm = compute_Z_vibr(mol, T, Tv - ΔT)
+                Evm = compute_E_vibr(mol, T, Tv - ΔT, Zvm) / mol.mass
+                Zvp = compute_Z_vibr(mol, T, Tv + ΔT)
+                Evp = compute_E_vibr(mol, T, Tv + ΔT, Zvp) / mol.mass
+
+                @test true == isapprox(c_vibrTv, (Evp - Evm) / (2 * ΔT), rtol=rtol)
             end
         end
     end
