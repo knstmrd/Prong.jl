@@ -1,3 +1,4 @@
+using YAML: length
 include("../src/thermodynamic_properties.jl")
 using Test
 
@@ -6,9 +7,11 @@ using Test
 
     for molname in ["N2", "O2", "NO"]
         mol = create_molecule("data/particles.yaml", molname, simplified_anharmonic=true)
+        @test last(mol.vibrational_energy) < mol.dissociation_energy
         @test mol.n_vibr - 1 == UInt16(mol.vibrational_levels[length(mol.vibrational_levels)])
 
         molh = create_molecule("data/particles.yaml", molname, anharmonic=false)
+        @test last(molh.vibrational_energy) < molh.dissociation_energy
         @test molh.n_vibr - 1 == UInt16(molh.vibrational_levels[length(molh.vibrational_levels)])
 
         @test molh.n_vibr < mol.n_vibr
@@ -18,6 +21,73 @@ using Test
     end
 end
 
+
+@testset "distributions" begin
+    rtol = 0.0001
+
+    for molname in ["N2", "O2", "NO"]
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
+
+        for T in [500.0, 5000.0, 20000.0]
+            for Tv in [500.0, 5000.0, 20000.0]
+                Zv = compute_Z_vibr(mol, T, Tv)
+
+                xi_arr = compute_xi_vibr(mol, T, Tv, Zv)
+
+                @test length(xi_arr) == mol.n_vibr
+                @test true == isapprox(sum(xi_arr), 1.0, rtol=rtol)
+                @test true == all(xi_arr[1:length(xi_arr) - 1] .>= xi_arr[2:length(xi_arr)])
+            end
+        end
+    end
+
+    for molname in ["N2", "O2", "NO"]
+        mol = create_molecule("data/particles.yaml", molname, simplified_anharmonic=true, use_Treanor=false)
+
+        for T in [500.0, 5000.0, 20000.0]
+            for Tv in [500.0, 5000.0, 20000.0]
+                Zv = compute_Z_vibr(mol, T, Tv)
+
+                xi_arr = compute_xi_vibr(mol, T, Tv, Zv)
+
+                @test length(xi_arr) == mol.n_vibr
+                @test true == isapprox(sum(xi_arr), 1.0, rtol=rtol)
+                @test true == all(xi_arr[1:length(xi_arr) - 1] .>= xi_arr[2:length(xi_arr)])
+            end
+        end
+    end
+
+    for molname in ["N2", "O2", "NO"]
+        mol = create_molecule("data/particles.yaml", molname, simplified_anharmonic=true, use_Treanor=true, continue_Treanor_with_Boltzmann=false)
+
+        for T in [500.0, 5000.0, 20000.0]
+            for Tv in [500.0, 5000.0, 20000.0]
+                Zv = compute_Z_vibr(mol, T, Tv)
+
+                xi_arr = compute_xi_vibr(mol, T, Tv, Zv)
+
+                @test true == isapprox(sum(xi_arr), 1.0, rtol=rtol)
+                @test true == all(xi_arr[1:length(xi_arr) - 1] .>= xi_arr[2:length(xi_arr)])
+            end
+        end
+    end
+
+    for molname in ["N2", "O2", "NO"]
+        mol = create_molecule("data/particles.yaml", molname, simplified_anharmonic=true, use_Treanor=true, continue_Treanor_with_Boltzmann=true)
+
+        for T in [500.0, 5000.0, 20000.0]
+            for Tv in [500.0, 5000.0, 20000.0]
+                Zv = compute_Z_vibr(mol, T, Tv)
+
+                xi_arr = compute_xi_vibr(mol, T, Tv, Zv)
+
+                @test length(xi_arr) == mol.n_vibr
+                @test true == isapprox(sum(xi_arr), 1.0, rtol=rtol)
+                @test true == all(xi_arr[1:length(xi_arr) - 1] .>= xi_arr[2:length(xi_arr)])
+            end
+        end
+    end
+end
 
 @testset "specific heats" begin    
 
@@ -91,6 +161,7 @@ end
     end
 
 
+    ΔT = 0.05
     for molname in ["N2", "O2", "NO"]
         for continue_Treanor_with_Boltzmann in [true, false]
             mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true, continue_Treanor_with_Boltzmann=continue_Treanor_with_Boltzmann)
@@ -108,6 +179,7 @@ end
                     Evp = compute_E_vibr(mol, T + ΔT, Tv, Zvp) / mol.mass
 
                     @test c_vibrT <= 0.0
+                    println(molname, ", ", T, ", ", Tv, ", ", c_vibrT, ", ", (Evp - Evm) / (2 * ΔT))
                     @test true == isapprox(c_vibrT, (Evp - Evm) / (2 * ΔT), rtol=rtol)
 
                     Zvm = compute_Z_vibr(mol, T, Tv - ΔT)
@@ -122,6 +194,7 @@ end
     end
 
 
+    ΔT = 1
     for molname in ["N2", "O2", "NO"]
         mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true, use_Treanor=false)
         for T in [500.0, 5000.0, 20000.0]
