@@ -11,17 +11,13 @@ function compute_Z_vibr(mol::Molecule, T::Float64, Tv::Float64)
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
 
-            if mol.continue_Treanor_with_Boltzmann
-                Z = sum(exp.(-(mol.vibrational_energy[1:maxlevel] .- mol.vibrational_levels_mult1[1:maxlevel]) ./ (constants.k * T)
-                        .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
-                if maxlevel + 1 <= mol.n_vibr
-                    Z += sum(exp.(- mol.vibrational_levels_mult1[maxlevel + 1:end] ./ (constants.k * Tv)))
-                end
-                return Z
-            else
-                return sum(exp.(-(mol.vibrational_energy[1:maxlevel] .- mol.vibrational_levels_mult1[1:maxlevel]) ./ (constants.k * T)
-                           .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
+            Z = sum(exp.(-(mol.vibrational_energy[1:maxlevel] .- mol.vibrational_levels_mult1[1:maxlevel]) ./ (constants.k * T)
+            .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
+
+            if mol.continue_Treanor_with_Boltzmann && maxlevel + 1 <= mol.n_vibr
+                Z += sum(exp.(- mol.vibrational_levels_mult1[maxlevel + 1:end] ./ (constants.k * Tv)))
             end
+            return Z
         end
     end
 end
@@ -98,6 +94,8 @@ function compute_c_vibrT(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev
             .- mol.vibrational_levels_mult1 ./ (constants.k * Tv)))
             avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* exp.(-(mol.vibrational_energy .- mol.vibrational_levels_mult1) ./ (constants.k * T)
             .- mol.vibrational_levels_mult1 ./ (constants.k * Tv)))
+
+            Ev2 = Ev
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
 
@@ -109,7 +107,12 @@ function compute_c_vibrT(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev
             avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp.(-(mol.vibrational_energy[1:maxlevel] .- mol.vibrational_levels_mult1[1:maxlevel]) ./ (constants.k * T)
             .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
             
-            # if mol.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
+            if mol.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
+                Ev2 = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-(mol.vibrational_energy[1:maxlevel] .- mol.vibrational_levels_mult1[1:maxlevel]) ./ (constants.k * T)
+                .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv))) / Zv
+            else
+                Ev2 = Ev
+            end
             #     avg_evib_sq += sum(mol.vibrational_energy[maxlevel + 1:end] .* mol.vibrational_energy[maxlevel + 1:end] .* exp.(- mol.vibrational_levels_mult1[maxlevel + 1:end] ./ (constants.k * Tv)))
             #     avg_i += sum(mol.vibrational_levels[maxlevel + 1:end] .* exp.(- mol.vibrational_levels_mult1[maxlevel + 1:end] ./ (constants.k * Tv)))
             #     avg_i_ve += sum(mol.vibrational_levels[maxlevel + 1:end] .* mol.vibrational_energy[maxlevel + 1:end] .* exp.(- mol.vibrational_levels_mult1[maxlevel + 1:end] ./ (constants.k * Tv)))
@@ -122,7 +125,7 @@ function compute_c_vibrT(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev
     avg_i_ve /= Zv
 
 
-    return (avg_evib_sq - Ev^2 + mol.vibr_energy1 * avg_i * Ev - mol.vibr_energy1 * avg_i_ve) / (constants.k * T^2 * mol.mass)
+    return (avg_evib_sq - Ev * Ev2 + mol.vibr_energy1 * avg_i * Ev - mol.vibr_energy1 * avg_i_ve) / (constants.k * T^2 * mol.mass)
 end
 
 
