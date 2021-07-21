@@ -5,6 +5,7 @@ struct Atom
     mass::Float64
     formation_energy::Float64
     degeneracy::UInt8
+    gupta_yos_coefficients::Array{Float64,2}
 end
 
 struct Molecule
@@ -36,6 +37,7 @@ struct Molecule
 
     rotational_energy::Array{Float64,1}
     rotational_degeneracies::Array{Float64,1}
+    gupta_yos_coefficients::Array{Float64,2}
 end
 
 function create_atom(filename::String, name::String; include_electronic_degeneracy::Bool=true)
@@ -44,14 +46,15 @@ function create_atom(filename::String, name::String; include_electronic_degenera
     mass = data[name]["Mass, kg"]
 
     degeneracy = data[name]["Statistical weight"][1]
-
     if include_electronic_degeneracy == false
         degeneracy = 1
     end
 
     fe = data[name]["Formation energy, J"]
-    
-    return Atom(name, mass, degeneracy, fe)
+
+    gupta_yos_coefficients = reshape(data[name]["Gupta Yos thermodynamic curve fit coefficients"],(7,5))
+
+    return Atom(name, mass, fe, degeneracy, gupta_yos_coefficients)
 end
 
 function create_molecule(filename::String, name::String; anharmonic::Bool=true, simplified_anharmonic::Bool=true,
@@ -163,6 +166,9 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
         cont_Tr_B = false
     end
 
+    gupta_yos_coefficients = reshape(data[name]["Gupta Yos thermodynamic curve fit coefficients"],(7,5))
+    
     return Molecule(name, mass, dissociation_energy, fe, ve0, ve_arr[2], rotational_symmetry, anharmonic, use_Tr, cont_Tr_B,
-                    we, anharmonic_ratio, degeneracy, n_vibr, n_rot, vl_arr, vl_x1_arr, vl_xve_arr, ve_arr, re_arr, rd_arr)
+                    we, anharmonic_ratio, degeneracy, n_vibr, n_rot, vl_arr, vl_x1_arr, vl_xve_arr, ve_arr, re_arr, rd_arr,
+                    gupta_yos_coefficients)
 end

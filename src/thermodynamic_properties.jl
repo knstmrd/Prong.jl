@@ -166,8 +166,65 @@ function compute_c_rot(mol::Molecule, T::Float64, Zr::Float64, Er::Float64)
     return (avg_erot_sq - Er^2) / (constants.k * T^2 * mol.mass)
 end
 
-function compute_c_v_and_c_p(
-                     atom_arr::Array{Molecule,1}, mol_arr::Array{Molecule,1},
+function compute_c_v_and_c_p_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
+                                       atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
+                                       crot_arr::Array{Float64,1}, cvibrT_arr::Array{Float64,1})
+    if T < 300
+        # TODO: fix!
+        return 0.0, 0.0
+    elseif T >= 300 && T <= 1000
+        coeff_index = 1
+    elseif T > 1000 && T <= 6000
+        coeff_index = 2
+    elseif T > 6000 && T <= 15000
+        coeff_index = 3
+    elseif T > 15000 && T <= 25000
+        coeff_index = 4
+    elseif T > 25000
+        coeff_index = 5
+    end
+
+    rho = 0.0
+
+    n_tot = sum(atom_n_arr) + sum(mol_n_arr)
+    # c_v = 0.0
+    c_p = 0.0
+
+    for (atom, n) in zip(atom_arr, atom_n_arr)
+        rho += atom.mass * n
+
+        c_p += n * atom.gupta_yos_coefficients[1, coeff_index]
+        c_p += n * atom.gupta_yos_coefficients[2, coeff_index] * T
+        c_p += n * atom.gupta_yos_coefficients[3, coeff_index] * T^2
+        c_p += n * atom.gupta_yos_coefficients[4, coeff_index] * T^3
+        c_p += n * atom.gupta_yos_coefficients[5, coeff_index] * T^4
+    end
+
+    for (mol, n) in zip(mol_arr, mol_n_arr)
+        rho += mol.mass * n
+
+        c_p += n * mol.gupta_yos_coefficients[1, coeff_index]
+        c_p += n * mol.gupta_yos_coefficients[2, coeff_index] * T
+        c_p += n * mol.gupta_yos_coefficients[3, coeff_index] * T^2
+        c_p += n * mol.gupta_yos_coefficients[4, coeff_index] * T^3
+        c_p += n * mol.gupta_yos_coefficients[5, coeff_index] * T^4
+        # c_v += mol.mass * n * (crot + cvibr)
+    end
+
+    # c_p *= constants.N_A / (n_tot * rho)
+    R_specific = constants.k * n_tot / rho
+    molar_mass_mixture = rho * constants.N_A / n_tot 
+
+    # println("raw: ", c_p / n_tot / 1.987)
+
+    c_p *= constants.R / molar_mass_mixture / n_tot# convert to Joules from calories
+    # c_v += 1.5 * R_specific
+
+    return c_p - R_specific, c_p
+end
+
+function compute_c_v_and_c_p(T::Float64,
+                     atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
                      atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
                      crot_arr::Array{Float64,1}, cvibrT_arr::Array{Float64,1})
 
@@ -180,7 +237,7 @@ function compute_c_v_and_c_p(
             rho += atom.mass * n
         end
 
-        for (mol, n, crot, cvibr) in zip(mol_arr, atom_n_arr, crot_arr, cvibrT_arr)
+        for (mol, n, crot, cvibr) in zip(mol_arr, mol_n_arr, crot_arr, cvibrT_arr)
             rho += mol.mass * n
             c_v += mol.mass * n * (crot + cvibr)
         end
@@ -194,7 +251,7 @@ function compute_c_v_and_c_p(
 end
 
 
-function compute_U_and_h(T::Float64, atom_arr::Array{Molecule,1}, mol_arr::Array{Molecule,1},
+function compute_U_and_h(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
                    atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
                    Erot_arr::Array{Float64,1}, Evibr_arr::Array{Float64,1})
     U = 0.0

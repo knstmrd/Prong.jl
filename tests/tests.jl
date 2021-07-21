@@ -227,6 +227,54 @@ end
     end
 end
 
+
+@testset "specific heats curve fits" begin
+
+    T_arr = [500.0, 1000.0, 2500.0]
+    rtol = 0.03
+
+    for atomname in ["N", "O"]
+        for T in T_arr
+            atom = create_atom("data/particles.yaml", atomname)
+
+            molarr = Molecule[]
+            nmolarr = Float64[]
+            crotarr = Float64[]
+            cvibrarr = Float64[]
+
+            c_v_c_p_gy = compute_c_v_and_c_p_gupta_yos(T, [atom], molarr, [1e25], nmolarr, crotarr, cvibrarr)
+            c_v_c_p = compute_c_v_and_c_p(T, [atom], molarr, [1e25], nmolarr, crotarr, cvibrarr)
+            @test true == isapprox(c_v_c_p[2], c_v_c_p_gy[2], rtol=rtol)
+        end
+    end
+
+
+    for molname in ["N2", "O2", "NO"]
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true)
+        for T in T_arr
+
+            T = 1000.0
+            atomarr = Atom[]
+            natomarr = Float64[]
+            crotarr = Float64[]
+            cvibrarr = Float64[]
+
+            c_v_c_p_gy = compute_c_v_and_c_p_gupta_yos(T, atomarr, [mol], natomarr, [1e23], crotarr, cvibrarr)
+
+            Zr = compute_Z_rot(mol, T)
+            Er = compute_E_rot(mol, T, Zr)
+            crotarr = [compute_c_rot(mol, T, Zr, Er)]
+            Zv = compute_Z_vibr(mol, T, T)
+            Ev = compute_E_vibr(mol, T, T, Zv)
+            crotarr = [compute_c_rot(mol, T, Zr, Er)]
+            cvibrarr = [compute_c_vibrTv(mol, T, T, Zv, Ev)]
+
+            c_v_c_p = compute_c_v_and_c_p(T, atomarr, [mol], natomarr, [1e23], crotarr, cvibrarr)
+            @test true == isapprox(c_v_c_p[2], c_v_c_p_gy[2], rtol=rtol)
+        end
+    end
+end
+
 @testset "mixture specific heats" begin
     # mol = create_molecule("data/particles.yaml", "N2", anharmonic=true, simplified_anharmonic=true)
 
