@@ -249,11 +249,10 @@ end
     end
 
 
+    T_arr = [500.0, 1000.0, 2000.0]
     for molname in ["N2", "O2", "NO"]
         mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true)
         for T in T_arr
-
-            T = 1000.0
             atomarr = Atom[]
             natomarr = Float64[]
             crotarr = Float64[]
@@ -271,12 +270,92 @@ end
 
             c_v_c_p = compute_c_v_and_c_p(T, atomarr, [mol], natomarr, [1e23], crotarr, cvibrarr)
             @test true == isapprox(c_v_c_p[2], c_v_c_p_gy[2], rtol=rtol)
+            # println("T: ", T, ", ", c_v_c_p[1])
+        end
+    end
+end
+
+@testset "enthalpy" begin
+    T_arr = [500.0, 1000.0, 2000.0]
+    rtol = 0.03
+
+    ΔT = 1
+    # ΔT = 500
+    for molname in ["N2", "O2", "NO"]
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true)
+        for T in T_arr
+
+            atomarr = Atom[]
+            natomarr = Float64[]
+            crotarr = Float64[]
+            cvibrarr = Float64[]
+
+            Zr = compute_Z_rot(mol, T - ΔT)
+            Er_arr = [compute_E_rot(mol, T- ΔT, Zr)]
+            Zv = compute_Z_vibr(mol, T- ΔT, T- ΔT)
+            Ev_arr = [compute_E_vibr(mol, T- ΔT, T- ΔT, Zv)]
+
+            U_h_1 = compute_U_and_h(T- ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+
+            Zr = compute_Z_rot(mol, T + ΔT)
+            Er_arr = [compute_E_rot(mol, T + ΔT, Zr)]
+            Zv = compute_Z_vibr(mol, T + ΔT, T + ΔT)
+            Ev_arr = [compute_E_vibr(mol, T + ΔT, T + ΔT, Zv)]
+
+            U_h_2 = compute_U_and_h(T + ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+            # println(U_h_1)
+            # println(U_h_2)
+            # println(U_h_2[2] - U_h_1[2])
+            # println("T, ", T, ", ", (U_h_2[1] - U_h_1[1]) / (2 * ΔT))
         end
     end
 end
 
 @testset "mixture specific heats" begin
-    # mol = create_molecule("data/particles.yaml", "N2", anharmonic=true, simplified_anharmonic=true)
 
-    # println(compute_max_vibr_level(mol, 20000.0, 200.0))
+    T_arr = [500.0, 5000.0, 10000.0]
+    rtol = 0.01
+    ΔT = 0.05
+    n = 1e23
+
+    for (atomname, molname) in zip(["N", "O", "N"], ["N2", "O2", "NO"])
+        atom = create_atom("data/particles.yaml", atomname)
+
+        # in a Treanor distribution it's more complicated, because both T and Tv appear in the distribution
+        # for a harmonic oscillator everything's nice though, and we're testing thermal equilibrium here
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
+
+        for T in T_arr
+
+            Zrm = compute_Z_rot(mol, T - ΔT)
+            Er_arrm = [compute_E_rot(mol, T - ΔT, Zrm)]
+            Zvm = compute_Z_vibr(mol, T - ΔT, T - ΔT)
+            Ev_arrm = [compute_E_vibr(mol, T - ΔT, T - ΔT, Zvm)]
+
+            Zrp = compute_Z_rot(mol, T + ΔT)
+            Er_arrp = [compute_E_rot(mol, T + ΔT, Zrp)]
+            Zvp = compute_Z_vibr(mol, T + ΔT, T + ΔT)
+            Ev_arrp = [compute_E_vibr(mol, T + ΔT, T + ΔT, Zvp)]
+
+            Zr = compute_Z_rot(mol, T)
+            Er = compute_E_rot(mol, T, Zr)
+            Zv = compute_Z_vibr(mol, T, T)
+            Ev = compute_E_vibr(mol, T, T, Zv)
+
+            crotarr = [compute_c_rot(mol, T, Zr, Er)]
+            cvibrarr = [compute_c_vibrTv(mol, T, T, Zv, Ev)]
+
+            for x_atom in [0.0, 0.25, 0.5, 1.0]
+
+
+
+                U_h_1 = compute_U_and_h(T - ΔT, [atom], [mol], [n * x_atom], [(1.0 - x_atom) * n], Er_arrm, Ev_arrm)
+                U_h_2 = compute_U_and_h(T + ΔT, [atom], [mol], [n * x_atom], [(1.0 - x_atom) * n], Er_arrp, Ev_arrp)
+
+                
+                c_v_c_p = compute_c_v_and_c_p(T, [atom], [mol], [n * x_atom], [(1.0 - x_atom) * n], crotarr, cvibrarr)
+                @test true == isapprox(c_v_c_p[1], (U_h_2[1] - U_h_1[1]) / (2 * ΔT), rtol=rtol)
+            end
+        end
+    end
 end
