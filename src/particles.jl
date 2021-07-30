@@ -33,6 +33,7 @@ struct Molecule
     vibrational_levels::Array{Float64,1}
     vibrational_levels_mult1::Array{Float64,1}
     vibrational_levels_mult_energy::Array{Float64,1}
+    Δvibrational_anharmonic::Array{Float64,1}
     vibrational_energy::Array{Float64,1}
 
     rotational_energy::Array{Float64,1}
@@ -167,8 +168,12 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
     end
 
     gupta_yos_coefficients = reshape(data[name]["Gupta Yos thermodynamic curve fit coefficients"],(7,5))
+
+    Δvibrational_anharmonic = ve_arr - vl_x1_arr
+    # mol.vibrational_energy .- mol.vibrational_levels_mult1
     
     return Molecule(name, mass, dissociation_energy, fe, ve0, ve_arr[2], rotational_symmetry, anharmonic, use_Tr, cont_Tr_B,
-                    we, anharmonic_ratio, degeneracy, n_vibr, n_rot, vl_arr, vl_x1_arr, vl_xve_arr, ve_arr, re_arr, rd_arr,
+                    we, anharmonic_ratio, degeneracy, n_vibr, n_rot, vl_arr, vl_x1_arr, vl_xve_arr, Δvibrational_anharmonic,
+                    ve_arr, re_arr, rd_arr,
                     gupta_yos_coefficients)
 end
