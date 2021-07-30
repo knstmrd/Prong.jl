@@ -275,14 +275,13 @@ end
     end
 end
 
-@testset "enthalpy" begin
-    T_arr = [500.0, 1000.0, 2000.0]
-    rtol = 0.03
+@testset "enthalpy curve fits" begin
+    T_arr = [500.0, 1500.0, 2000.0]
+    rtol = 0.04
 
-    ΔT = 1
-    # ΔT = 500
+    ΔT = 300
     for molname in ["N2", "O2", "NO"]
-        mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true)
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
         for T in T_arr
 
             atomarr = Atom[]
@@ -290,12 +289,13 @@ end
             crotarr = Float64[]
             cvibrarr = Float64[]
 
-            Zr = compute_Z_rot(mol, T - ΔT)
-            Er_arr = [compute_E_rot(mol, T- ΔT, Zr)]
-            Zv = compute_Z_vibr(mol, T- ΔT, T- ΔT)
-            Ev_arr = [compute_E_vibr(mol, T- ΔT, T- ΔT, Zv)]
+            Zr = compute_Z_rot(mol, T)
+            Er_arr = [compute_E_rot(mol, T, Zr)]
+            Zv = compute_Z_vibr(mol, T, T)
+            Ev_arr = [compute_E_vibr(mol, T, T, Zv)]
 
-            U_h_1 = compute_U_and_h(T- ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+            U_h_1 = compute_U_and_h(T, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+            U_h_1_gy = compute_U_and_h_gupta_yos(T, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
 
             Zr = compute_Z_rot(mol, T + ΔT)
             Er_arr = [compute_E_rot(mol, T + ΔT, Zr)]
@@ -303,10 +303,10 @@ end
             Ev_arr = [compute_E_vibr(mol, T + ΔT, T + ΔT, Zv)]
 
             U_h_2 = compute_U_and_h(T + ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
-            # println(U_h_1)
-            # println(U_h_2)
-            # println(U_h_2[2] - U_h_1[2])
-            # println("T, ", T, ", ", (U_h_2[1] - U_h_1[1]) / (2 * ΔT))
+            U_h_2_gy = compute_U_and_h_gupta_yos(T + ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+
+
+            @test true == isapprox(U_h_2[2] - U_h_1[2], U_h_2_gy[2] - U_h_1_gy[2], rtol=rtol)
         end
     end
 end
