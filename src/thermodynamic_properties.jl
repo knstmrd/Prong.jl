@@ -310,33 +310,33 @@ function compute_U_and_h_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr:
     rho = 0.0
 
     n_tot = sum(atom_n_arr) + sum(mol_n_arr)
-    c_p = 0.0
+    h = 0.0
 
     for (atom, n) in zip(atom_arr, atom_n_arr)
         rho += atom.mass * n
 
-        c_p += n * atom.gupta_yos_coefficients[1, coeff_index]
-        c_p += n * atom.gupta_yos_coefficients[2, coeff_index] * T
-        c_p += n * atom.gupta_yos_coefficients[3, coeff_index] * T^2
-        c_p += n * atom.gupta_yos_coefficients[4, coeff_index] * T^3
-        c_p += n * atom.gupta_yos_coefficients[5, coeff_index] * T^4
-        c_p += n * atom.gupta_yos_coefficients[6, coeff_index] / T
+        h += n * atom.gupta_yos_coefficients[1, coeff_index]
+        h += n * atom.gupta_yos_coefficients[2, coeff_index] * T / 2
+        h += n * atom.gupta_yos_coefficients[3, coeff_index] * T^2 / 3
+        h += n * atom.gupta_yos_coefficients[4, coeff_index] * T^3 / 4
+        h += n * atom.gupta_yos_coefficients[5, coeff_index] * T^4 / 5
+        h += n * atom.gupta_yos_coefficients[6, coeff_index] / T
     end
 
     for (mol, n) in zip(mol_arr, mol_n_arr)
         rho += mol.mass * n
 
-        c_p += n * mol.gupta_yos_coefficients[1, coeff_index]
-        c_p += n * mol.gupta_yos_coefficients[2, coeff_index] * T
-        c_p += n * mol.gupta_yos_coefficients[3, coeff_index] * T^2
-        c_p += n * mol.gupta_yos_coefficients[4, coeff_index] * T^3
-        c_p += n * mol.gupta_yos_coefficients[5, coeff_index] * T^4
-        c_p += n * mol.gupta_yos_coefficients[6, coeff_index] / T
+        h += n * mol.gupta_yos_coefficients[1, coeff_index]
+        h += n * mol.gupta_yos_coefficients[2, coeff_index] * T / 2
+        h += n * mol.gupta_yos_coefficients[3, coeff_index] * T^2 / 3
+        h += n * mol.gupta_yos_coefficients[4, coeff_index] * T^3 / 4
+        h += n * mol.gupta_yos_coefficients[5, coeff_index] * T^4 / 5
+        h += n * mol.gupta_yos_coefficients[6, coeff_index] / T
     end
 
     molar_mass_mixture = rho * constants.N_A / n_tot 
 
-    c_p *= constants.R * T / molar_mass_mixture / n_tot  # convert to Joules from calories
+    h *= constants.R * T / molar_mass_mixture / n_tot  # convert to Joules from calories
 
     return h - n_tot * constants.k * T / rho, h
 end
