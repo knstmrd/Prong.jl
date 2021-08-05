@@ -20,8 +20,8 @@ struct Molecule
     
     # infinite_harmonic::Bool
     anharmonic::Bool
-    use_Treanor::Bool
-    continue_Treanor_with_Boltzmann::Bool  # if Tv>T, do we continue the Treanor distribution with a Boltzmann one?
+    # use_Treanor::Bool
+    # continue_Treanor_with_Boltzmann::Bool  # if Tv>T, do we continue the Treanor distribution with a Boltzmann one?
     frequency::Float64
     anharmonic_ratio::Float64
 
@@ -39,6 +39,11 @@ struct Molecule
     rotational_energy::Array{Float64,1}
     rotational_degeneracies::Array{Float64,1}
     gupta_yos_coefficients::Array{Float64,2}
+end
+
+struct VibrationalDistribution
+    use_Treanor::Bool
+    continue_Treanor_with_Boltzmann::Bool
 end
 
 function create_atom(filename::String, name::String; include_electronic_degeneracy::Bool=true)
@@ -59,7 +64,6 @@ function create_atom(filename::String, name::String; include_electronic_degenera
 end
 
 function create_molecule(filename::String, name::String; anharmonic::Bool=true, simplified_anharmonic::Bool=true,
-                         use_Treanor::Bool=true, continue_Treanor_with_Boltzmann::Bool=true,
                          include_electronic_degeneracy::Bool=true)
     data = YAML.load(open(filename))
     mass = data[name]["Mass, kg"]
@@ -157,8 +161,21 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
 
     n_rot = length(re_arr)
 
+    gupta_yos_coefficients = reshape(data[name]["Gupta Yos thermodynamic curve fit coefficients"],(7,5))
+
+    Δvibrational_anharmonic = ve_arr - vl_x1_arr
+    # mol.vibrational_energy .- mol.vibrational_levels_mult1
+    
+    return Molecule(name, mass, dissociation_energy, fe, ve0, ve_arr[2], rotational_symmetry, anharmonic,
+                    we, anharmonic_ratio, degeneracy, n_vibr, n_rot, vl_arr, vl_x1_arr, vl_xve_arr, Δvibrational_anharmonic,
+                    ve_arr, re_arr, rd_arr,
+                    gupta_yos_coefficients)
+end
+
+function create_vibrational_distribution(anharmonic::Bool, use_Treanor::Bool, continue_Treanor_with_Boltzmann::Bool)
     use_Tr = use_Treanor
     cont_Tr_B = continue_Treanor_with_Boltzmann
+    
     if !anharmonic
         use_Tr = false
     end
@@ -167,13 +184,5 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
         cont_Tr_B = false
     end
 
-    gupta_yos_coefficients = reshape(data[name]["Gupta Yos thermodynamic curve fit coefficients"],(7,5))
-
-    Δvibrational_anharmonic = ve_arr - vl_x1_arr
-    # mol.vibrational_energy .- mol.vibrational_levels_mult1
-    
-    return Molecule(name, mass, dissociation_energy, fe, ve0, ve_arr[2], rotational_symmetry, anharmonic, use_Tr, cont_Tr_B,
-                    we, anharmonic_ratio, degeneracy, n_vibr, n_rot, vl_arr, vl_x1_arr, vl_xve_arr, Δvibrational_anharmonic,
-                    ve_arr, re_arr, rd_arr,
-                    gupta_yos_coefficients)
+    return VibrationalDistribution(use_Tr, cont_Tr_B)
 end

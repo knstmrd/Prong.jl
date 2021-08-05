@@ -1,8 +1,8 @@
 include("utils.jl")
 
 
-function compute_Z_vibr(mol::Molecule, T::Float64, Tv::Float64)
-    if mol.anharmonic == false || !mol.use_Treanor
+function compute_Z_vibr(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64)
+    if mol.anharmonic == false || !vd.use_Treanor
         return sum(exp.(-mol.vibrational_energy ./ (constants.k * Tv)))
     else
         if T >= Tv
@@ -14,7 +14,7 @@ function compute_Z_vibr(mol::Molecule, T::Float64, Tv::Float64)
             Z = sum(exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
             .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
 
-            if mol.continue_Treanor_with_Boltzmann && maxlevel + 1 <= mol.n_vibr
+            if vd.continue_Treanor_with_Boltzmann && maxlevel + 1 <= mol.n_vibr
                 Z += sum(exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (constants.k * Tv)))
             end
             return Z
@@ -26,8 +26,8 @@ function compute_Z_rot(mol::Molecule, T::Float64)
     return sum(mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (constants.k * T))) / mol.rotational_symmetry
 end
 
-function compute_xi_vibr(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64)
-    if mol.anharmonic == false || !mol.use_Treanor
+function compute_xi_vibr(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64)
+    if mol.anharmonic == false || !vd.use_Treanor
         return exp.(-mol.vibrational_energy ./ (constants.k * Tv)) / Zv
     else
         if T >= Tv
@@ -36,7 +36,7 @@ function compute_xi_vibr(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64)
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
 
-            if mol.continue_Treanor_with_Boltzmann
+            if vd.continue_Treanor_with_Boltzmann
                 res = zeros(mol.n_vibr)
 
                 res[1:maxlevel] .= exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
@@ -53,8 +53,8 @@ function compute_xi_vibr(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64)
     end
 end
 
-function compute_E_vibr(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64)
-    if mol.anharmonic == false || !mol.use_Treanor
+function compute_E_vibr(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64)
+    if mol.anharmonic == false || !vd.use_Treanor
         Ev = sum(mol.vibrational_energy .* exp.(-mol.vibrational_energy ./ (constants.k * Tv)))
     else
         if T >= Tv
@@ -63,7 +63,7 @@ function compute_E_vibr(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64)
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
 
-            if mol.continue_Treanor_with_Boltzmann
+            if vd.continue_Treanor_with_Boltzmann
                 Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
                         .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
                 if maxlevel + 1 <= mol.n_vibr
@@ -83,8 +83,8 @@ function compute_E_rot(mol::Molecule, T::Float64, Zr::Float64)
     return sum(mol.rotational_energy .* mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (constants.k * T))) / mol.rotational_symmetry / Zr
 end
 
-function compute_c_vibrT(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
-    if mol.anharmonic == false || !mol.use_Treanor
+function compute_c_vibrT(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
+    if mol.anharmonic == false || !vd.use_Treanor
         return 0.0
     else
         if T >= Tv
@@ -106,7 +106,7 @@ function compute_c_vibrT(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev
             avg_i = sum(mol.vibrational_levels[1:maxlevel] .* exp_distr)
             avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
             
-            if mol.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
+            if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
                 Ev2 = sum(mol.vibrational_energy[1:maxlevel] .* exp_distr) / Zv
             else
                 Ev2 = Ev
@@ -123,8 +123,8 @@ function compute_c_vibrT(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev
 end
 
 
-function compute_c_vibrTv(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
-    if mol.anharmonic == false || !mol.use_Treanor
+function compute_c_vibrTv(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
+    if mol.anharmonic == false || !vd.use_Treanor
         avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (constants.k * Tv)))
         avg_evib_sq /= Zv
         return (avg_evib_sq - Ev^2) / (constants.k * Tv^2 * mol.mass)
@@ -141,7 +141,7 @@ function compute_c_vibrTv(mol::Molecule, T::Float64, Tv::Float64, Zv::Float64, E
             avg_i = sum(mol.vibrational_levels[1:maxlevel] .* exp_distr)
             avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
             
-            if mol.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
+            if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
                 avg_i += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (constants.k * Tv))) / mol.vibr_energy1
                 avg_i_ve += sum(mol.vibrational_energy[maxlevel + 1:end] .* mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (constants.k * Tv))) / mol.vibr_energy1
             end
