@@ -301,7 +301,7 @@ end
     ΔT = 0.05
     n = 1e23
 
-    rtol_mix = 0.01
+    rtol_mix = 0.00001
 
     for (atomname, molname) in zip(["N", "O", "N"], ["N2", "O2", "NO"])
         atom = create_atom("data/particles.yaml", atomname)
