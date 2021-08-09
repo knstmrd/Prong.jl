@@ -1,3 +1,8 @@
+name = "Prong"
+uuid = "d2615ea8-bad4-43b1-9519-2e717d60c60b"
+authors = ["Georgii Oblapenko <kunstmord@kunstmord.com>"]
+version = "0.1.0"
+
 [deps]
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 UnitfulEquivalences = "da9c4bc3-91c8-4f02-8a40-6b990d2a7e0c"
