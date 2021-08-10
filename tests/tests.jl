@@ -223,7 +223,7 @@ end
             crotarr = Float64[]
             cvibrarr = Float64[]
 
-            c_v_c_p_gy = compute_c_v_and_c_p_gupta_yos(T, [atom], molarr, [1e25], nmolarr, crotarr, cvibrarr)
+            c_v_c_p_gy = compute_c_v_and_c_p_equilibrium_gupta_yos(T, [atom], molarr, [1e25], nmolarr, crotarr, cvibrarr)
             c_v_c_p = compute_c_v_and_c_p(T, [atom], molarr, [1e25], nmolarr, crotarr, cvibrarr)
             @test true == isapprox(c_v_c_p[2], c_v_c_p_gy[2], rtol=rtol)
         end
@@ -240,7 +240,7 @@ end
             crotarr = Float64[]
             cvibrarr = Float64[]
 
-            c_v_c_p_gy = compute_c_v_and_c_p_gupta_yos(T, atomarr, [mol], natomarr, [1e23], crotarr, cvibrarr)
+            c_v_c_p_gy = compute_c_v_and_c_p_equilibrium_gupta_yos(T, atomarr, [mol], natomarr, [1e23], crotarr, cvibrarr)
 
             Zr = compute_Z_rot(mol, T)
             Er = compute_E_rot(mol, T, Zr)
@@ -278,7 +278,7 @@ end
             Ev_arr = [compute_E_vibr(mol, vd, T, T, Zv)]
 
             U_h_1 = compute_U_and_h(T, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
-            U_h_1_gy = compute_U_and_h_gupta_yos(T, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+            U_h_1_gy = compute_U_and_h_equilibrium_gupta_yos(T, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
 
             Zr = compute_Z_rot(mol, T + ΔT)
             Er_arr = [compute_E_rot(mol, T + ΔT, Zr)]
@@ -286,7 +286,7 @@ end
             Ev_arr = [compute_E_vibr(mol, vd, T + ΔT, T + ΔT, Zv)]
 
             U_h_2 = compute_U_and_h(T + ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
-            U_h_2_gy = compute_U_and_h_gupta_yos(T + ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+            U_h_2_gy = compute_U_and_h_equilibrium_gupta_yos(T + ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
 
 
             @test true == isapprox(U_h_2[2] - U_h_1[2], U_h_2_gy[2] - U_h_1_gy[2], rtol=rtol)

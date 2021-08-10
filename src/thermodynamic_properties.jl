@@ -154,12 +154,21 @@ function compute_c_vibrTv(mol::Molecule, vd::VibrationalDistribution, T::Float64
     return mol.vibr_energy1 * (avg_i_ve - avg_i * Ev) / (constants.k * Tv^2 * mol.mass)
 end
 
+
+
+function compute_c_vibr_equilibrium(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
+    avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (constants.k * Tv)))
+    avg_evib_sq /= Zv
+    return (avg_evib_sq - Ev^2) / (constants.k * T^2 * mol.mass)
+end
+
+
 function compute_c_rot(mol::Molecule, T::Float64, Zr::Float64, Er::Float64)
     avg_erot_sq = sum(mol.rotational_energy .* mol.rotational_energy .* mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (constants.k * T))) / mol.rotational_symmetry / Zr
     return (avg_erot_sq - Er^2) / (constants.k * T^2 * mol.mass)
 end
 
-function compute_c_v_and_c_p_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
+function compute_c_v_and_c_p_equilibrium_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
                                        atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
                                        crot_arr::Array{Float64,1}, cvibrT_arr::Array{Float64,1})
     if T < 300
@@ -238,7 +247,7 @@ function compute_c_v_and_c_p(T::Float64,
 end
 
 
-function compute_c_v_and_c_p_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
+function compute_c_v_and_c_p_equilibrium_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
                                        atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
                                        crot_arr::Array{Float64,1}, cvibrT_arr::Array{Float64,1})
     if T < 300
@@ -289,7 +298,8 @@ function compute_c_v_and_c_p_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_
     return c_p - R_specific, c_p
 end
 
-function compute_U_and_h_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
+
+function compute_U_and_h_equilibrium_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
     atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
     Erot_arr::Array{Float64,1}, Evibr_arr::Array{Float64,1})
     if T < 300
