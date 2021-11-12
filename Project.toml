@@ -1,9 +1,10 @@
 name = "Prong"
 uuid = "d2615ea8-bad4-43b1-9519-2e717d60c60b"
 authors = ["Georgii Oblapenko <kunstmord@kunstmord.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
+PhysicalConstants = "5ad8b20f-a522-5ce9-bfc9-ddf1d5bda6ab"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 UnitfulEquivalences = "da9c4bc3-91c8-4f02-8a40-6b990d2a7e0c"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"

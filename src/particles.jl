@@ -1,20 +1,22 @@
 using YAML
+using Unitful
+using PhysicalConstants.CODATA2018
 
 struct Atom
     name::String
-    mass::Float64
-    formation_energy::Float64
+    mass::typeof(1.0u"kg")
+    formation_energy::typeof(1.0u"J")
     degeneracy::UInt8
     gupta_yos_coefficients::Array{Float64,2}
 end
 
 struct Molecule
     name::String
-    mass::Float64
-    dissociation_energy::Float64
-    formation_energy::Float64
-    vibr_energy0::Float64
-    vibr_energy1::Float64
+    mass::typeof(1.0u"kg")
+    dissociation_energy::typeof(1.0u"J")
+    formation_energy::typeof(1.0u"J")
+    vibr_energy0::typeof(1.0u"J")
+    vibr_energy1::typeof(1.0u"J")
 
     rotational_symmetry::UInt8
     
@@ -22,7 +24,7 @@ struct Molecule
     anharmonic::Bool
     # use_Treanor::Bool
     # continue_Treanor_with_Boltzmann::Bool  # if Tv>T, do we continue the Treanor distribution with a Boltzmann one?
-    frequency::Float64
+    frequency::typeof(1.0u"m^-1")
     anharmonic_ratio::Float64
 
     degeneracy::UInt8
@@ -31,12 +33,12 @@ struct Molecule
     n_rot::UInt16
 
     vibrational_levels::Array{Float64,1}
-    vibrational_levels_mult1::Array{Float64,1}
-    vibrational_levels_mult_energy::Array{Float64,1}
-    Δvibrational_anharmonic::Array{Float64,1}
-    vibrational_energy::Array{Float64,1}
+    vibrational_levels_mult1::Array{typeof(1.0u"J"),1}  # i * vibr_energy(first level)
+    vibrational_levels_mult_energy::Array{typeof(1.0u"J"),1}  # i * vibr_energy(level i)
+    Δvibrational_anharmonic::Array{typeof(1.0u"J"),1}
+    vibrational_energy::Array{typeof(1.0u"J"),1}
 
-    rotational_energy::Array{Float64,1}
+    rotational_energy::Array{typeof(1.0u"J"),1}
     rotational_degeneracies::Array{Float64,1}
     gupta_yos_coefficients::Array{Float64,2}
 end
@@ -49,14 +51,14 @@ end
 function create_atom(filename::String, name::String; include_electronic_degeneracy::Bool=true)
 
     data = YAML.load(open(filename))
-    mass = data[name]["Mass, kg"]
+    mass = data[name]["Mass, kg"] * 1.0u"kg"
 
     degeneracy = data[name]["Statistical weight"][1]
     if include_electronic_degeneracy == false
         degeneracy = 1
     end
 
-    fe = data[name]["Formation energy, J"]
+    fe = data[name]["Formation energy, J"] * 1.0u"J"
 
     gupta_yos_coefficients = reshape(data[name]["Gupta Yos thermodynamic curve fit coefficients"],(7,5))
 
@@ -66,7 +68,7 @@ end
 function create_molecule(filename::String, name::String; anharmonic::Bool=true, simplified_anharmonic::Bool=true,
                          include_electronic_degeneracy::Bool=true)
     data = YAML.load(open(filename))
-    mass = data[name]["Mass, kg"]
+    mass = data[name]["Mass, kg"] * 1.0u"kg"
 
     degeneracy = data[name]["Statistical weight"][1]
 
@@ -74,37 +76,37 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
         degeneracy = 1
     end
 
-    fe = data[name]["Formation energy, J"]
+    fe = data[name]["Formation energy, J"] * 1.0u"J"
 
-    dissociation_energy = data[name]["Dissociation energy, J"][1]
+    dissociation_energy = data[name]["Dissociation energy, J"][1] * 1.0u"J"
 
     rotational_symmetry = data[name]["Factor of symmetry"]
 
-    we = data[name]["Frequency of vibrations (we), m^-1"][1]
+    we = data[name]["Frequency of vibrations (we), m^-1"][1] * 1.0u"m^-1"
 
-    wexe = 0.0
-    weye = 0.0
-    weze = 0.0
+    wexe = 0.0u"m^-1"
+    weye = 0.0u"m^-1"
+    weze = 0.0u"m^-1"
     anharmonic_ratio = 0.0
 
     if anharmonic
-        wexe = data[name]["wexe, m^-1"][1]
+        wexe = data[name]["wexe, m^-1"][1] * 1.0u"m^-1"
         anharmonic_ratio = wexe / we
 
         if !simplified_anharmonic
-            weye = data[name]["weye, m^-1"][1]
-            weze = data[name]["weye, m^-1"][1]
+            weye = data[name]["weye, m^-1"][1] * 1.0u"m^-1"
+            weze = data[name]["weye, m^-1"][1] * 1.0u"m^-1"
         end
     end
 
     i = 0
-    tmp = 0.0
+    tmp = 0.0u"J"
 
     ve_arr = []
     vl_arr = []
 
     while (tmp < dissociation_energy)
-        tmp = constants.h * constants.c * (we * (i + 0.5) - wexe * (i + 0.5)^2 
+        tmp = PlanckConstant * SpeedOfLightInVacuum	* (we * (i + 0.5) - wexe * (i + 0.5)^2 
                                                           + weye * (i + 0.5)^3
                                                           + weze * (i + 0.5)^4)
         if (tmp < dissociation_energy)
@@ -132,16 +134,16 @@ function create_molecule(filename::String, name::String; anharmonic::Bool=true, 
     vl_x1_arr = vl_arr .* ve_arr[2]
     vl_xve_arr = vl_arr .* ve_arr
 
-    rot_be = data[name]["Be, m^-1"][1]
+    rot_be = data[name]["Be, m^-1"][1] * 1.0u"m^-1"
 
     j = 0
-    tmp = 0.0
+    tmp = 0.0u"J"
 
     re_arr = []
     rd_arr = []
 
     while (tmp < dissociation_energy)
-        tmp = constants.h * constants.c * (rot_be * j * (j+1));
+        tmp = PlanckConstant * SpeedOfLightInVacuum * (rot_be * j * (j+1));
         if (tmp < dissociation_energy)
             if j == 0
                 push!(re_arr, tmp)

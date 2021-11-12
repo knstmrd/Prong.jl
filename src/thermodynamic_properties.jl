@@ -1,77 +1,79 @@
+using Unitful
+using PhysicalConstants.CODATA2018: k_B
 include("utils.jl")
 
 
-function compute_Z_vibr(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64)
+function compute_Z_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv)
     if mol.anharmonic == false || !vd.use_Treanor
-        return sum(exp.(-mol.vibrational_energy ./ (constants.k * Tv)))
+        return sum(exp.(-mol.vibrational_energy ./ (k_B * Tv)))
     else
         if T >= Tv
-            return sum(exp.(-mol.Δvibrational_anharmonic ./ (constants.k * T)
-                       .- mol.vibrational_levels_mult1 ./ (constants.k * Tv)))
+            return sum(exp.(-mol.Δvibrational_anharmonic ./ (k_B * T)
+                       .- mol.vibrational_levels_mult1 ./ (k_B * Tv)))
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
 
-            Z = sum(exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
-            .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
+            Z = sum(exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+            .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv)))
 
             if vd.continue_Treanor_with_Boltzmann && maxlevel + 1 <= mol.n_vibr
-                Z += sum(exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (constants.k * Tv)))
+                Z += sum(exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv)))
             end
             return Z
         end
     end
 end
 
-function compute_Z_rot(mol::Molecule, T::Float64)
-    return sum(mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (constants.k * T))) / mol.rotational_symmetry
+function compute_Z_rot(mol::Molecule, T)
+    return sum(mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (k_B * T))) / mol.rotational_symmetry
 end
 
-function compute_xi_vibr(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64)
+function compute_xi_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv::Float64)
     if mol.anharmonic == false || !vd.use_Treanor
-        return exp.(-mol.vibrational_energy ./ (constants.k * Tv)) / Zv
+        return exp.(-mol.vibrational_energy ./ (k_B * Tv)) / Zv
     else
         if T >= Tv
-            return exp.(-mol.Δvibrational_anharmonic ./ (constants.k * T)
-                     .- mol.vibrational_levels_mult1 ./ (constants.k * Tv)) / Zv
+            return exp.(-mol.Δvibrational_anharmonic ./ (k_B * T)
+                     .- mol.vibrational_levels_mult1 ./ (k_B * Tv)) / Zv
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
 
             if vd.continue_Treanor_with_Boltzmann
                 res = zeros(mol.n_vibr)
 
-                res[1:maxlevel] .= exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
-                        .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv))
+                res[1:maxlevel] .= exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                        .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
                 if maxlevel + 1 <= mol.n_vibr
-                    res[maxlevel + 1:end] .= exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (constants.k * Tv))
+                    res[maxlevel + 1:end] .= exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))
                 end
                 return res ./ Zv
             else
-                return exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
-                           .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)) / Zv
+                return exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                           .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv)) / Zv
             end
         end
     end
 end
 
-function compute_E_vibr(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64)
+function compute_E_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv::Float64)
     if mol.anharmonic == false || !vd.use_Treanor
-        Ev = sum(mol.vibrational_energy .* exp.(-mol.vibrational_energy ./ (constants.k * Tv)))
+        Ev = sum(mol.vibrational_energy .* exp.(-mol.vibrational_energy ./ (k_B * Tv)))
     else
         if T >= Tv
-            Ev = sum(mol.vibrational_energy .* exp.(-mol.Δvibrational_anharmonic ./ (constants.k * T)
-                     .- mol.vibrational_levels_mult1 ./ (constants.k * Tv)))
+            Ev = sum(mol.vibrational_energy .* exp.(-mol.Δvibrational_anharmonic ./ (k_B * T)
+                     .- mol.vibrational_levels_mult1 ./ (k_B * Tv)))
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
 
             if vd.continue_Treanor_with_Boltzmann
-                Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
-                        .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
+                Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                        .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv)))
                 if maxlevel + 1 <= mol.n_vibr
-                    Ev += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (constants.k * Tv)))
+                    Ev += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv)))
                 end
             else
-                Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
-                           .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv)))
+                Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                           .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv)))
             end
         end
     end
@@ -79,16 +81,16 @@ function compute_E_vibr(mol::Molecule, vd::VibrationalDistribution, T::Float64, 
     return Ev / Zv
 end
 
-function compute_E_rot(mol::Molecule, T::Float64, Zr::Float64)
-    return sum(mol.rotational_energy .* mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (constants.k * T))) / mol.rotational_symmetry / Zr
+function compute_E_rot(mol::Molecule, T, Zr::Float64)
+    return sum(mol.rotational_energy .* mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (k_B * T))) / mol.rotational_symmetry / Zr
 end
 
-function compute_c_vibrT(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
+function compute_c_vibrT(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv, Ev)
     if mol.anharmonic == false || !vd.use_Treanor
-        return 0.0
+        return 0.0u"J * kg^-1 * K^-1"
     else
         if T >= Tv
-            exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (constants.k * T) .- mol.vibrational_levels_mult1 ./ (constants.k * Tv))
+            exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (k_B * T) .- mol.vibrational_levels_mult1 ./ (k_B * Tv))
 
             avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp_distr)
             avg_i = sum(mol.vibrational_levels .* exp_distr)
@@ -98,8 +100,8 @@ function compute_c_vibrT(mol::Molecule, vd::VibrationalDistribution, T::Float64,
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
 
-            exp_distr = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T)
-            .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv))
+            exp_distr = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+            .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
 
             avg_evib_sq = sum(mol.vibrational_energy[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
 
@@ -119,31 +121,31 @@ function compute_c_vibrT(mol::Molecule, vd::VibrationalDistribution, T::Float64,
     avg_i_ve /= Zv
 
 
-    return (avg_evib_sq - Ev * Ev2 + mol.vibr_energy1 * avg_i * Ev - mol.vibr_energy1 * avg_i_ve) / (constants.k * T^2 * mol.mass)
+    return (avg_evib_sq - Ev * Ev2 + mol.vibr_energy1 * avg_i * Ev - mol.vibr_energy1 * avg_i_ve) / (k_B * T^2 * mol.mass)
 end
 
 
-function compute_c_vibrTv(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
+function compute_c_vibrTv(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv, Ev)
     if mol.anharmonic == false || !vd.use_Treanor
-        avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (constants.k * Tv)))
+        avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (k_B * Tv)))
         avg_evib_sq /= Zv
-        return (avg_evib_sq - Ev^2) / (constants.k * Tv^2 * mol.mass)
+        return (avg_evib_sq - Ev^2) / (k_B * Tv^2 * mol.mass)
     else
         if T >= Tv
-            exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (constants.k * T) .- mol.vibrational_levels_mult1 ./ (constants.k * Tv))
+            exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (k_B * T) .- mol.vibrational_levels_mult1 ./ (k_B * Tv))
 
             avg_i = sum(mol.vibrational_levels .* exp_distr)
             avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* exp_distr)
         else
             maxlevel = compute_max_vibr_level(mol, T, Tv)
-            exp_distr = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (constants.k * T) .- mol.vibrational_levels_mult1[1:maxlevel] ./ (constants.k * Tv))
+            exp_distr = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T) .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
 
             avg_i = sum(mol.vibrational_levels[1:maxlevel] .* exp_distr)
             avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
             
             if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
-                avg_i += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (constants.k * Tv))) / mol.vibr_energy1
-                avg_i_ve += sum(mol.vibrational_energy[maxlevel + 1:end] .* mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (constants.k * Tv))) / mol.vibr_energy1
+                avg_i += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))) / mol.vibr_energy1
+                avg_i_ve += sum(mol.vibrational_energy[maxlevel + 1:end] .* mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))) / mol.vibr_energy1
             end
         end
     end
@@ -151,29 +153,32 @@ function compute_c_vibrTv(mol::Molecule, vd::VibrationalDistribution, T::Float64
     avg_i /= Zv
     avg_i_ve /= Zv
 
-    return mol.vibr_energy1 * (avg_i_ve - avg_i * Ev) / (constants.k * Tv^2 * mol.mass)
+    return mol.vibr_energy1 * (avg_i_ve - avg_i * Ev) / (k_B * Tv^2 * mol.mass)
 end
 
 
 
-function compute_c_vibr_equilibrium(mol::Molecule, vd::VibrationalDistribution, T::Float64, Tv::Float64, Zv::Float64, Ev::Float64)
-    avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (constants.k * Tv)))
+function compute_c_vibr_equilibrium(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv, Ev)
+    avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (k_B * Tv)))
     avg_evib_sq /= Zv
-    return (avg_evib_sq - Ev^2) / (constants.k * T^2 * mol.mass)
+    return (avg_evib_sq - Ev^2) / (k_B * T^2 * mol.mass)
 end
 
 
-function compute_c_rot(mol::Molecule, T::Float64, Zr::Float64, Er::Float64)
-    avg_erot_sq = sum(mol.rotational_energy .* mol.rotational_energy .* mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (constants.k * T))) / mol.rotational_symmetry / Zr
-    return (avg_erot_sq - Er^2) / (constants.k * T^2 * mol.mass)
+function compute_c_rot(mol::Molecule, T, Zr, Er)
+    avg_erot_sq = sum(mol.rotational_energy .* mol.rotational_energy .* mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (k_B * T))) / mol.rotational_symmetry / Zr
+    return (avg_erot_sq - Er^2) / (k_B * T^2 * mol.mass)
 end
 
-function compute_c_v_and_c_p_equilibrium_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
-                                       atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
-                                       crot_arr::Array{Float64,1}, cvibrT_arr::Array{Float64,1})
+function compute_c_v_and_c_p_equilibrium_gupta_yos(T, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
+                                       atom_n_arr::Array{typeof(1.0u"m^-3"),1}, mol_n_arr::Array{typeof(1.0u"m^-3"),1},
+                                       crot_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1},
+                                       cvibrT_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1})
+
+    T = ustrip(u"K", T)
     if T < 300
         # TODO: fix!
-        return 0.0, 0.0
+        return 0.0u"J * kg^-1", 0.0u"J * kg^-1"
     elseif T >= 300 && T <= 1000
         coeff_index = 1
     elseif T > 1000 && T <= 6000
@@ -186,10 +191,10 @@ function compute_c_v_and_c_p_equilibrium_gupta_yos(T::Float64, atom_arr::Array{A
         coeff_index = 5
     end
 
-    rho = 0.0
+    rho = 0.0u"kg * m^-3"
 
     n_tot = sum(atom_n_arr) + sum(mol_n_arr)
-    c_p = 0.0
+    c_p = 0.0u"J * kg^-1"
 
     for (atom, n) in zip(atom_arr, atom_n_arr)
         rho += atom.mass * n
@@ -211,23 +216,24 @@ function compute_c_v_and_c_p_equilibrium_gupta_yos(T::Float64, atom_arr::Array{A
         c_p += n * mol.gupta_yos_coefficients[5, coeff_index] * T^4
     end
 
-    R_specific = constants.k * n_tot / rho
+    R_specific = k_B * n_tot / rho
     molar_mass_mixture = rho * constants.N_A / n_tot 
 
-    c_p *= constants.R / molar_mass_mixture / n_tot  # convert to Joules from calories
+    c_p *= MolarGasConstant / molar_mass_mixture / n_tot  # convert to Joules from calories
 
     return c_p - R_specific, c_p
 end
 
-function compute_c_v_and_c_p(T::Float64,
+function compute_c_v_and_c_p(T,
                      atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
-                     atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
-                     crot_arr::Array{Float64,1}, cvibrT_arr::Array{Float64,1})
+                     atom_n_arr::Array{typeof(1.0u"m^-3"),1}, mol_n_arr::Array{typeof(1.0u"m^-3"),1},
+                     crot_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1},
+                     cvibrT_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1})
 
-    rho = 0.0
+    rho = 0.0u"kg * m^-3"
 
     n_tot = sum(atom_n_arr) + sum(mol_n_arr)
-    c_v = 0.0
+    c_v = 0.0u"J * m^-3 * K^-1"
 
     for (atom, n) in zip(atom_arr, atom_n_arr)
         rho += atom.mass * n
@@ -238,21 +244,24 @@ function compute_c_v_and_c_p(T::Float64,
         c_v += mol.mass * n * (crot + cvibr)
     end
 
-    R_specific = constants.k * n_tot / rho
+    R_specific = k_B * n_tot / rho
 
-    c_v /= rho
-    c_v += 1.5 * R_specific
+    c_v_out = c_v / rho
+    c_v_out += 1.5 * R_specific
 
-    return c_v, c_v + R_specific
+    return c_v_out, c_v_out + R_specific
 end
 
 
-function compute_c_v_and_c_p_equilibrium_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
-                                       atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
-                                       crot_arr::Array{Float64,1}, cvibrT_arr::Array{Float64,1})
+function compute_c_v_and_c_p_equilibrium_gupta_yos(T_in, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
+                                                    atom_n_arr::Array{typeof(1.0u"m^-3"),1}, mol_n_arr::Array{typeof(1.0u"m^-3"),1},
+                                                    crot_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1},
+                                                    cvibrT_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1})
+
+    T = ustrip(u"K", T_in)
     if T < 300
         # TODO: fix!
-        return 0.0, 0.0
+        return 0.0u"J * kg^-1", 0.0u"J * kg^-1"
     elseif T >= 300 && T <= 1000
         coeff_index = 1
     elseif T > 1000 && T <= 6000
@@ -265,10 +274,10 @@ function compute_c_v_and_c_p_equilibrium_gupta_yos(T::Float64, atom_arr::Array{A
         coeff_index = 5
     end
 
-    rho = 0.0
+    rho = 0.0u"kg * m^-3"
 
     n_tot = sum(atom_n_arr) + sum(mol_n_arr)
-    c_p = 0.0
+    c_p = 0.0u"m^-3"
 
     for (atom, n) in zip(atom_arr, atom_n_arr)
         rho += atom.mass * n
@@ -290,21 +299,23 @@ function compute_c_v_and_c_p_equilibrium_gupta_yos(T::Float64, atom_arr::Array{A
         c_p += n * mol.gupta_yos_coefficients[5, coeff_index] * T^4
     end
 
-    R_specific = constants.k * n_tot / rho
-    molar_mass_mixture = rho * constants.N_A / n_tot 
+    R_specific = k_B * n_tot / rho
+    molar_mass_mixture = rho * AvogadroConstant / n_tot 
 
-    c_p *= constants.R / molar_mass_mixture / n_tot  # convert to Joules from calories
+    c_p_out = c_p * MolarGasConstant / molar_mass_mixture / n_tot
 
-    return c_p - R_specific, c_p
+    return c_p_out - R_specific, c_p_out
 end
 
 
-function compute_U_and_h_equilibrium_gupta_yos(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
-    atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
-    Erot_arr::Array{Float64,1}, Evibr_arr::Array{Float64,1})
+function compute_U_and_h_equilibrium_gupta_yos(T, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
+    atom_n_arr::Array{typeof(1.0u"m^-3"),1}, mol_n_arr::Array{typeof(1.0u"m^-3"),1},
+    Erot_arr::Array{typeof(1.0u"J"),1}, Evibr_arr::Array{typeof(1.0u"J"),1})
+
+    T = ustrip(u"K", T)
     if T < 300
         # TODO: fix!
-        return 0.0, 0.0
+        return 0.0u"J * kg^-1", 0.0u"J * kg^-1"
     elseif T >= 300 && T <= 1000
         coeff_index = 1
     elseif T > 1000 && T <= 6000
@@ -317,10 +328,10 @@ function compute_U_and_h_equilibrium_gupta_yos(T::Float64, atom_arr::Array{Atom,
         coeff_index = 5
     end
 
-    rho = 0.0
+    rho = 0.0u"kg * m^-3"
 
     n_tot = sum(atom_n_arr) + sum(mol_n_arr)
-    h = 0.0
+    h = 0.0u"m^-3"
 
     for (atom, n) in zip(atom_arr, atom_n_arr)
         rho += atom.mass * n
@@ -344,19 +355,19 @@ function compute_U_and_h_equilibrium_gupta_yos(T::Float64, atom_arr::Array{Atom,
         h += n * mol.gupta_yos_coefficients[6, coeff_index] / T
     end
 
-    molar_mass_mixture = rho * constants.N_A / n_tot 
+    molar_mass_mixture = rho * AvogadroConstant / n_tot 
 
-    h *= constants.R * T / molar_mass_mixture / n_tot  # convert to Joules from calories
+    h_out = h * MolarGasConstant * T * 1.0u"K" / molar_mass_mixture / n_tot  # convert to Joules from calories
 
-    return h - n_tot * constants.k * T / rho, h
+    return h_out - n_tot * k_B * T * 1.0u"K" / rho, h_out
 end
 
-function compute_U_and_h(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
-                   atom_n_arr::Array{Float64,1}, mol_n_arr::Array{Float64,1},
-                   Erot_arr::Array{Float64,1}, Evibr_arr::Array{Float64,1})
-    U = 0.0
+function compute_U_and_h(T, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
+                        atom_n_arr::Array{typeof(1.0u"m^-3"),1}, mol_n_arr::Array{typeof(1.0u"m^-3"),1},
+                        Erot_arr::Array{typeof(1.0u"J"),1}, Evibr_arr::Array{typeof(1.0u"J"),1})
+    U = 0.0u"J * m^-3"
 
-    rho = 0.0
+    rho = 0.0u"kg * m^-3"
 
     n_tot = sum(atom_n_arr) + sum(mol_n_arr)
 
@@ -370,9 +381,9 @@ function compute_U_and_h(T::Float64, atom_arr::Array{Atom,1}, mol_arr::Array{Mol
         U += (mol.formation_energy + Erot + Evibr) * n
     end
 
-    U /= rho
+    U_out = U / rho
 
-    U += 1.5 * n_tot * constants.k * T / rho
+    U_out += 1.5 * n_tot * k_B * T / rho
 
-    return U, U + n_tot * constants.k * T / rho
+    return U_out, U_out + n_tot * k_B * T / rho
 end

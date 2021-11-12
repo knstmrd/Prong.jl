@@ -6,35 +6,40 @@ mutable struct Mixture
     vibrational_distribution::VibrationalDistribution
 
     Zr::Array{Float64,1}
-    Er::Array{Float64,1}
+    Er::Array{typeof(1.0u"J"),1}
     Zv::Array{Float64,1}
-    Ev::Array{Float64,1}
+    Ev::Array{typeof(1.0u"J"),1}
 
-    c_rot::Array{Float64,1}
-    c_vibrT::Array{Float64,1}
-    c_vibrTv::Array{Float64,1}
+    c_rot::Array{typeof(1.0u"J * K^-1 * kg^-1"),1}
+    c_vibrT::Array{typeof(1.0u"J * K^-1 * kg^-1"),1}
+    c_vibrTv::Array{typeof(1.0u"J * K^-1 * kg^-1"),1}
 
-    c_v::Float64
-    c_p::Float64
+    c_v::typeof(1.0u"J * K^-1 * kg^-1")
+    c_p::typeof(1.0u"J * K^-1 * kg^-1")
 
-    U::Float64
-    h::Float64
+    U::typeof(1.0u"J * kg^-1")
+    h::typeof(1.0u"J * kg^-1")
 
-    c_vibr_equilibrium::Array{Float64,1}
-    c_v_equilibrium::Float64
-    c_p_equilibrium::Float64
+    c_vibr_equilibrium::Array{typeof(1.0u"J * K^-1 * kg^-1"),1}
+    c_v_equilibrium::typeof(1.0u"J * K^-1 * kg^-1")
+    c_p_equilibrium::typeof(1.0u"J * K^-1 * kg^-1")
 end
 
 function create_mixture(atoms, molecules, vd)
     return Mixture(atoms, molecules, vd,
-    zeros(Float64, length(molecules)), zeros(Float64, length(molecules)),  # Zr/Er
-    zeros(Float64, length(molecules)), zeros(Float64, length(molecules)),  # Zv/Ev
-    zeros(Float64, length(molecules)), zeros(Float64, length(molecules)), zeros(Float64, length(molecules)), # c_rot, c_vibrT, c_vibrTv
-    0.0, 0.0, 0.0, 0.0, # c_v, c_p, U, h
-    zeros(Float64, length(molecules)), 0.0, 0.0) # c_vibr(equilibrium)
+    zeros(Float64, length(molecules)), zeros(typeof(1.0u"J"), length(molecules)),  # Zr/Er
+    zeros(Float64, length(molecules)), zeros(typeof(1.0u"J"), length(molecules)),  # Zv/Ev
+    zeros(typeof(1.0u"J * K^-1 * kg^-1"), length(molecules)),
+    zeros(typeof(1.0u"J * K^-1 * kg^-1"), length(molecules)),
+    zeros(typeof(1.0u"J * K^-1 * kg^-1"), length(molecules)), # c_rot, c_vibrT, c_vibrTv
+    0.0u"J * K^-1 * kg^-1", # c_v
+    0.0u"J * K^-1 * kg^-1", # c_p
+    0.0u"J * kg^-1", 0.0u"J * kg^-1", #U, h
+    zeros(typeof(1.0u"J * K^-1 * kg^-1"), length(molecules)), # c_vibr(equilibrium)
+    0.0u"J * K^-1 * kg^-1", 0.0u"J * K^-1 * kg^-1") # c_v_equilibrium, c_p_equilibrium
 end
 
-function compute_mixture!(mixture::Mixture, T::Float64, Tv::Array{Float64,1}, n_atom::Array{Float64,1}, n_molecule::Array{Float64,1};
+function compute_mixture!(mixture::Mixture, T, Tv::Array{typeof(1.0u"K"),1}, n_atom::Array{typeof(1.0u"m^-3"),1}, n_molecule::Array{typeof(1.0u"m^-3"),1};
                           compute_equilibrium=false, use_gupta_yos=false)
     for (i, mol) in enumerate(mixture.molecules)
         mixture.Zr[i] = compute_Z_rot(mol, T)

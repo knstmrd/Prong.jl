@@ -31,8 +31,8 @@ end
         mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
 
         vd = create_vibrational_distribution(false, false, false)
-        for T in [500.0, 5000.0, 20000.0]
-            for Tv in [500.0, 5000.0, 20000.0]
+        for T in [500.0u"K", 5000.0u"K", 20000.0u"K"]
+            for Tv in [500.0u"K", 5000.0u"K", 20000.0u"K"]
                 Zv = compute_Z_vibr(mol, vd, T, Tv)
 
                 xi_arr = compute_xi_vibr(mol, vd, T, Tv, Zv)
@@ -51,8 +51,8 @@ end
         vd_tr_cont = create_vibrational_distribution(true, true, true)
 
         for vd in [vd_boltzmann, vd_tr, vd_tr_cont]
-            for T in [500.0, 5000.0, 20000.0]
-                for Tv in [500.0, 5000.0, 20000.0]
+            for T in [500.0u"K", 5000.0u"K", 20000.0u"K"]
+                for Tv in [500.0u"K", 5000.0u"K", 20000.0u"K"]
                     Zv = compute_Z_vibr(mol, vd, T, Tv)
 
                     xi_arr = compute_xi_vibr(mol, vd, T, Tv, Zv)
@@ -75,15 +75,15 @@ end
     # check that c_rot is approximately k/m, ±1%
 
     rtol = 0.01
-    ΔT = 1
+    ΔT = 1u"K"
 
     for molname in molnames
         mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true)
-        for T in [500.0, 1000.0, 2500.0, 5000.0]
+        for T in [500.0u"K", 1000.0u"K", 2500.0u"K", 5000.0u"K"]
             Zr = compute_Z_rot(mol, T)
             Er = compute_E_rot(mol, T, Zr)
             crot = compute_c_rot(mol, T, Zr, Er)
-            crot_const = constants.k / mol.mass
+            crot_const = k_B / mol.mass
             @test true == isapprox(crot, crot_const, rtol=rtol)
 
 
@@ -96,7 +96,7 @@ end
         end
 
         # crot is not very close to k/m at higher temperatures, so we're dropping that test
-        for T in [7500.0, 10000.0, 15000.0, 20000.]
+        for T in [7500.0u"K", 10000.0u"K", 15000.0u"K", 20000.0u"K"]
             Zr = compute_Z_rot(mol, T)
             Er = compute_E_rot(mol, T, Zr)
             crot = compute_c_rot(mol, T, Zr, Er)
@@ -115,8 +115,8 @@ end
 
         vd = create_vibrational_distribution(false, false, false)
 
-        for T in [500.0, 5000.0, 20000.0]
-            for Tv in [500.0, 5000.0, 20000.0]
+        for T in [500.0u"K", 5000.0u"K", 20000.0u"K"]
+            for Tv in [500.0u"K", 5000.0u"K", 20000.0u"K"]
                 Zv = compute_Z_vibr(mol, vd, T, Tv)
                 Ev = compute_E_vibr(mol, vd, T, Tv, Zv)
                 c_vibrT = compute_c_vibrT(mol, vd, T, Tv, Zv, Ev)
@@ -128,7 +128,7 @@ end
                 Zvp = compute_Z_vibr(mol, vd, T + ΔT, Tv)
                 Evp = compute_E_vibr(mol, vd, T + ΔT, Tv, Zvp) / mol.mass
 
-                @test c_vibrT <= 0.0
+                @test c_vibrT <= 0.0u"J * kg^-1 * K^-1"
                 @test true == isapprox(c_vibrT, (Evp - Evm) / (2 * ΔT), rtol=rtol)
 
 
@@ -150,8 +150,8 @@ end
         for continue_Treanor_with_Boltzmann in [true, false]
             # continue_Treanor_with_Boltzmann=continue_Treanor_with_Boltzmann)
             vd = create_vibrational_distribution(true, true, continue_Treanor_with_Boltzmann)
-            for T in [500.0, 5000.0, 20000.0]
-                for Tv in [500.0, 5000.0, 20000.0]
+            for T in [500.0u"K", 5000.0u"K", 20000.0u"K"]
+                for Tv in [500.0u"K", 5000.0u"K", 20000.0u"K"]
                     Zv = compute_Z_vibr(mol, vd, T, Tv)
                     Ev = compute_E_vibr(mol, vd, T, Tv, Zv)
                     c_vibrT = compute_c_vibrT(mol, vd, T, Tv, Zv, Ev)
@@ -164,10 +164,10 @@ end
                     Evp = compute_E_vibr(mol, vd, T + ΔT, Tv, Zvp) / mol.mass
 
                     # some numerical precision issues arise for this distribution, so we relax the tolerances a bit
-                    if (abs(c_vibrT) > 1e-8)
+                    if (abs(c_vibrT) > 1e-8u"J * kg^-1 * K^-1")
                         @test true == isapprox(c_vibrT, (Evp - Evm) / (2 * ΔT), rtol=rtol)
                     else
-                        @test true == isapprox(c_vibrT, (Evp - Evm) / (2 * ΔT), atol=1e-10)
+                        @test true == isapprox(c_vibrT, (Evp - Evm) / (2 * ΔT), atol=1e-10u"J * kg^-1 * K^-1")
                     end
 
                     Zvm = compute_Z_vibr(mol, vd, T, Tv - ΔT)
@@ -181,8 +181,8 @@ end
         end
 
         vd = create_vibrational_distribution(true, false, false)
-        for T in [500.0, 5000.0, 20000.0]
-            for Tv in [500.0, 5000.0, 20000.0]
+        for T in [500.0u"K", 5000.0u"K", 20000.0u"K"]
+            for Tv in [500.0u"K", 5000.0u"K", 20000.0u"K"]
                 Zv = compute_Z_vibr(mol, vd, T, Tv)
                 Ev = compute_E_vibr(mol, vd, T, Tv, Zv)
                 c_vibrT = compute_c_vibrT(mol, vd, T, Tv, Zv, Ev)
@@ -194,7 +194,7 @@ end
                 Zvp = compute_Z_vibr(mol, vd, T + ΔT, Tv)
                 Evp = compute_E_vibr(mol, vd, T + ΔT, Tv, Zvp) / mol.mass
 
-                @test c_vibrT <= 0.0
+                @test c_vibrT <= 0.0u"J * kg^-1 * K^-1"
                 @test true == isapprox(c_vibrT, (Evp - Evm) / (2 * ΔT), rtol=rtol)
 
                 Zvm = compute_Z_vibr(mol, vd, T, Tv - ΔT)
@@ -211,7 +211,7 @@ end
 
 @testset "specific heats curve fits" begin
 
-    T_arr = [500.0, 1000.0, 2500.0]
+    T_arr = [500.0u"K", 1000.0u"K", 2500.0u"K"]
     rtol = 0.03
 
     for atomname in ["N", "O"]
@@ -219,28 +219,28 @@ end
             atom = create_atom("data/particles.yaml", atomname)
 
             molarr = Molecule[]
-            nmolarr = Float64[]
-            crotarr = Float64[]
-            cvibrarr = Float64[]
+            nmolarr = typeof(1.0u"m^-3")[]
+            crotarr = typeof(1.0u"J * kg^-1 * K^-1")[]
+            cvibrarr = typeof(1.0u"J * kg^-1 * K^-1")[]
 
-            c_v_c_p_gy = compute_c_v_and_c_p_equilibrium_gupta_yos(T, [atom], molarr, [1e25], nmolarr, crotarr, cvibrarr)
-            c_v_c_p = compute_c_v_and_c_p(T, [atom], molarr, [1e25], nmolarr, crotarr, cvibrarr)
+            c_v_c_p_gy = compute_c_v_and_c_p_equilibrium_gupta_yos(T, [atom], molarr, [1e25u"m^-3"], nmolarr, crotarr, cvibrarr)
+            c_v_c_p = compute_c_v_and_c_p(T, [atom], molarr, [1e25u"m^-3"], nmolarr, crotarr, cvibrarr)
             @test true == isapprox(c_v_c_p[2], c_v_c_p_gy[2], rtol=rtol)
         end
     end
 
 
-    T_arr = [500.0, 1000.0, 2000.0]
+    T_arr = [500.0u"K", 1000.0u"K", 2000.0u"K"]
     for molname in molnames
         mol = create_molecule("data/particles.yaml", molname, anharmonic=true, simplified_anharmonic=true)
         vd = create_vibrational_distribution(true, true, false)
         for T in T_arr
             atomarr = Atom[]
-            natomarr = Float64[]
-            crotarr = Float64[]
-            cvibrarr = Float64[]
+            natomarr = typeof(1.0u"m^-3")[]
+            crotarr = typeof(1.0u"J * kg^-1 * K^-1")[]
+            cvibrarr = typeof(1.0u"J * kg^-1 * K^-1")[]
 
-            c_v_c_p_gy = compute_c_v_and_c_p_equilibrium_gupta_yos(T, atomarr, [mol], natomarr, [1e23], crotarr, cvibrarr)
+            c_v_c_p_gy = compute_c_v_and_c_p_equilibrium_gupta_yos(T, atomarr, [mol], natomarr, [1e23u"m^-3"], crotarr, cvibrarr)
 
             Zr = compute_Z_rot(mol, T)
             Er = compute_E_rot(mol, T, Zr)
@@ -250,7 +250,7 @@ end
             crotarr = [compute_c_rot(mol, T, Zr, Er)]
             cvibrarr = [compute_c_vibrTv(mol, vd, T, T, Zv, Ev)]
 
-            c_v_c_p = compute_c_v_and_c_p(T, atomarr, [mol], natomarr, [1e23], crotarr, cvibrarr)
+            c_v_c_p = compute_c_v_and_c_p(T, atomarr, [mol], natomarr, [1e23u"m^-3"], crotarr, cvibrarr)
             @test true == isapprox(c_v_c_p[2], c_v_c_p_gy[2], rtol=rtol)
             # println("T: ", T, ", ", c_v_c_p[1])
         end
@@ -258,35 +258,35 @@ end
 end
 
 @testset "enthalpy curve fits" begin
-    T_arr = [500.0, 1500.0, 2000.0]
+    T_arr = [500.0u"K", 1500.0u"K", 2000.0u"K"]
     rtol = 0.04
 
-    ΔT = 300
+    ΔT = 300u"K"
     for molname in ["N2", "O2", "NO"]
         mol = create_molecule("data/particles.yaml", molname, anharmonic=true)
         vd = create_vibrational_distribution(true, true, false)
         for T in T_arr
 
             atomarr = Atom[]
-            natomarr = Float64[]
-            crotarr = Float64[]
-            cvibrarr = Float64[]
+            natomarr = typeof(1.0u"m^-3")[]
+            crotarr = typeof(1.0u"J * kg^-1 * K^-1")[]
+            cvibrarr = typeof(1.0u"J * kg^-1 * K^-1")[]
 
             Zr = compute_Z_rot(mol, T)
             Er_arr = [compute_E_rot(mol, T, Zr)]
             Zv = compute_Z_vibr(mol, vd, T, T)
             Ev_arr = [compute_E_vibr(mol, vd, T, T, Zv)]
 
-            U_h_1 = compute_U_and_h(T, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
-            U_h_1_gy = compute_U_and_h_equilibrium_gupta_yos(T, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+            U_h_1 = compute_U_and_h(T, atomarr, [mol], natomarr, [1e23u"m^-3"], Er_arr, Ev_arr)
+            U_h_1_gy = compute_U_and_h_equilibrium_gupta_yos(T, atomarr, [mol], natomarr, [1e23u"m^-3"], Er_arr, Ev_arr)
 
             Zr = compute_Z_rot(mol, T + ΔT)
             Er_arr = [compute_E_rot(mol, T + ΔT, Zr)]
             Zv = compute_Z_vibr(mol, vd, T + ΔT, T + ΔT)
             Ev_arr = [compute_E_vibr(mol, vd, T + ΔT, T + ΔT, Zv)]
 
-            U_h_2 = compute_U_and_h(T + ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
-            U_h_2_gy = compute_U_and_h_equilibrium_gupta_yos(T + ΔT, atomarr, [mol], natomarr, [1e23], Er_arr, Ev_arr)
+            U_h_2 = compute_U_and_h(T + ΔT, atomarr, [mol], natomarr, [1e23u"m^-3"], Er_arr, Ev_arr)
+            U_h_2_gy = compute_U_and_h_equilibrium_gupta_yos(T + ΔT, atomarr, [mol], natomarr, [1e23u"m^-3"], Er_arr, Ev_arr)
 
 
             @test true == isapprox(U_h_2[2] - U_h_1[2], U_h_2_gy[2] - U_h_1_gy[2], rtol=rtol)
@@ -296,10 +296,10 @@ end
 
 @testset "mixture specific heats" begin
 
-    T_arr = [500.0, 5000.0, 10000.0]
+    T_arr = [500.0u"K", 5000.0u"K", 10000.0u"K"]
     rtol = 0.01
-    ΔT = 0.05
-    n = 1e23
+    ΔT = 0.05u"K"
+    n = 1e23u"m^-3"
 
     rtol_mix = 0.00001
 
