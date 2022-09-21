@@ -55,105 +55,183 @@ function compute_xi_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv::
     end
 end
 
-function compute_E_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv::Float64)
-    if mol.anharmonic == false || !vd.use_Treanor
-        Ev = sum(mol.vibrational_energy .* exp.(-mol.vibrational_energy ./ (k_B * Tv)))
-    else
-        if T >= Tv
-            Ev = sum(mol.vibrational_energy .* exp.(-mol.Δvibrational_anharmonic ./ (k_B * T)
-                     .- mol.vibrational_levels_mult1 ./ (k_B * Tv)))
-        else
-            maxlevel = compute_max_vibr_level(mol, T, Tv)
+function compute_E_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv::Float64, x_i::Union{Array{Float64,1},Nothing}=nothing)
 
-            if vd.continue_Treanor_with_Boltzmann
-                Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
-                        .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv)))
-                if maxlevel + 1 <= mol.n_vibr
-                    Ev += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv)))
-                end
+    if x_i === nothing
+        if mol.anharmonic == false || !vd.use_Treanor
+            Ev = sum(mol.vibrational_energy .* exp.(-mol.vibrational_energy ./ (k_B * Tv)))
+        else
+            if T >= Tv
+                Ev = sum(mol.vibrational_energy .* exp.(-mol.Δvibrational_anharmonic ./ (k_B * T)
+                        .- mol.vibrational_levels_mult1 ./ (k_B * Tv)))
             else
-                Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
-                           .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv)))
+                maxlevel = compute_max_vibr_level(mol, T, Tv)
+
+                if vd.continue_Treanor_with_Boltzmann
+                    Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                            .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv)))
+                    if maxlevel + 1 <= mol.n_vibr
+                        Ev += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv)))
+                    end
+                else
+                    Ev = sum(mol.vibrational_energy[1:maxlevel] .* exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                            .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv)))
+                end
             end
         end
-    end
+        return Ev / Zv
+    else
+        if mol.anharmonic == false || !vd.use_Treanor
+            Ev = sum(mol.vibrational_energy .* x_i)
+        else
+            if T >= Tv
+                Ev = sum(mol.vibrational_energy .* x_i)
+            else
+                maxlevel = compute_max_vibr_level(mol, T, Tv)
 
-    return Ev / Zv
+                if vd.continue_Treanor_with_Boltzmann
+                    Ev = sum(mol.vibrational_energy[1:maxlevel] .* x_i[1:maxlevel])
+                    if maxlevel + 1 <= mol.n_vibr
+                        Ev += sum(mol.vibrational_energy[maxlevel + 1:end] .* x_i[maxlevel + 1:end])
+                    end
+                else
+                    Ev = sum(mol.vibrational_energy[1:maxlevel] .* x_i[1:maxlevel])
+                end
+            end
+        end
+        return Ev
+    end
 end
 
 function compute_E_rot(mol::Molecule, T, Zr::Float64)
     return sum(mol.rotational_energy .* mol.rotational_degeneracies .* exp.(-mol.rotational_energy / (k_B * T))) / mol.rotational_symmetry / Zr
 end
 
-function compute_c_vibrT(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv, Ev)
-    if mol.anharmonic == false || !vd.use_Treanor
-        return 0.0u"J * kg^-1 * K^-1"
-    else
-        if T >= Tv
-            exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (k_B * T) .- mol.vibrational_levels_mult1 ./ (k_B * Tv))
-
-            avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp_distr)
-            avg_i = sum(mol.vibrational_levels .* exp_distr)
-            avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* exp_distr)
-
-            Ev2 = Ev
+function compute_c_vibrT(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv, Ev, x_i::Union{Array{Float64,1},Nothing}=nothing)
+    if x_i === nothing
+        if mol.anharmonic == false || !vd.use_Treanor
+            return 0.0u"J * kg^-1 * K^-1"
         else
-            maxlevel = compute_max_vibr_level(mol, T, Tv)
+            if T >= Tv
+                exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (k_B * T) .- mol.vibrational_levels_mult1 ./ (k_B * Tv))
 
-            exp_distr = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
-            .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
+                avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp_distr)
+                avg_i = sum(mol.vibrational_levels .* exp_distr)
+                avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* exp_distr)
 
-            avg_evib_sq = sum(mol.vibrational_energy[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
-
-            avg_i = sum(mol.vibrational_levels[1:maxlevel] .* exp_distr)
-            avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
-            
-            if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
-                Ev2 = sum(mol.vibrational_energy[1:maxlevel] .* exp_distr) / Zv
-            else
                 Ev2 = Ev
+            else
+                maxlevel = compute_max_vibr_level(mol, T, Tv)
+
+                exp_distr = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
+
+                avg_evib_sq = sum(mol.vibrational_energy[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
+
+                avg_i = sum(mol.vibrational_levels[1:maxlevel] .* exp_distr)
+                avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
+                
+                if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
+                    Ev2 = sum(mol.vibrational_energy[1:maxlevel] .* exp_distr) / Zv
+                else
+                    Ev2 = Ev
+                end
             end
         end
+
+        avg_evib_sq /= Zv
+        avg_i /= Zv
+        avg_i_ve /= Zv
+
+
+        return (avg_evib_sq - Ev * Ev2 + mol.vibr_energy1 * avg_i * Ev - mol.vibr_energy1 * avg_i_ve) / (k_B * T^2 * mol.mass)
+    else
+        if mol.anharmonic == false || !vd.use_Treanor
+            return 0.0u"J * kg^-1 * K^-1"
+        else
+            if T >= Tv
+                # exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (k_B * T) .- mol.vibrational_levels_mult1 ./ (k_B * Tv))
+
+                avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* x_i)
+                avg_i = sum(mol.vibrational_levels .* x_i)
+                avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* x_i)
+
+                Ev2 = Ev
+            else
+                maxlevel = compute_max_vibr_level(mol, T, Tv)
+
+                avg_evib_sq = sum(mol.vibrational_energy[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* x_i[1:maxlevel])
+
+                avg_i = sum(mol.vibrational_levels[1:maxlevel] .* x_i[1:maxlevel])
+                avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* x_i[1:maxlevel])
+                
+                if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
+                    Ev2 = sum(mol.vibrational_energy[1:maxlevel] .* x_i[1:maxlevel]) / Zv
+                else
+                    Ev2 = Ev
+                end
+            end
+        end
+
+        return (avg_evib_sq - Ev * Ev2 + mol.vibr_energy1 * avg_i * Ev - mol.vibr_energy1 * avg_i_ve) / (k_B * T^2 * mol.mass)
     end
-
-    avg_evib_sq /= Zv
-    avg_i /= Zv
-    avg_i_ve /= Zv
-
-
-    return (avg_evib_sq - Ev * Ev2 + mol.vibr_energy1 * avg_i * Ev - mol.vibr_energy1 * avg_i_ve) / (k_B * T^2 * mol.mass)
 end
 
 
-function compute_c_vibrTv(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv, Ev)
-    if mol.anharmonic == false || !vd.use_Treanor
-        avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (k_B * Tv)))
-        avg_evib_sq /= Zv
-        return (avg_evib_sq - Ev^2) / (k_B * Tv^2 * mol.mass)
-    else
-        if T >= Tv
-            exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (k_B * T) .- mol.vibrational_levels_mult1 ./ (k_B * Tv))
+function compute_c_vibrTv(mol::Molecule, vd::VibrationalDistribution, T, Tv, Zv, Ev, x_i::Union{Array{Float64,1},Nothing}=nothing)
 
-            avg_i = sum(mol.vibrational_levels .* exp_distr)
-            avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* exp_distr)
+    if x_i === nothing
+        if mol.anharmonic == false || !vd.use_Treanor
+            avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* exp.(- mol.vibrational_energy ./ (k_B * Tv)))
+            avg_evib_sq /= Zv
+            return (avg_evib_sq - Ev^2) / (k_B * Tv^2 * mol.mass)
         else
-            maxlevel = compute_max_vibr_level(mol, T, Tv)
-            exp_distr = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T) .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
+            if T >= Tv
+                exp_distr = exp.(-mol.Δvibrational_anharmonic ./ (k_B * T) .- mol.vibrational_levels_mult1 ./ (k_B * Tv))
 
-            avg_i = sum(mol.vibrational_levels[1:maxlevel] .* exp_distr)
-            avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
-            
-            if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
-                avg_i += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))) / mol.vibr_energy1
-                avg_i_ve += sum(mol.vibrational_energy[maxlevel + 1:end] .* mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))) / mol.vibr_energy1
+                avg_i = sum(mol.vibrational_levels .* exp_distr)
+                avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* exp_distr)
+            else
+                maxlevel = compute_max_vibr_level(mol, T, Tv)
+                exp_distr = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T) .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
+
+                avg_i = sum(mol.vibrational_levels[1:maxlevel] .* exp_distr)
+                avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* exp_distr)
+                
+                if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
+                    avg_i += sum(mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))) / mol.vibr_energy1
+                    avg_i_ve += sum(mol.vibrational_energy[maxlevel + 1:end] .* mol.vibrational_energy[maxlevel + 1:end] .* exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))) / mol.vibr_energy1
+                end
             end
         end
+
+        avg_i /= Zv
+        avg_i_ve /= Zv
+
+        return mol.vibr_energy1 * (avg_i_ve - avg_i * Ev) / (k_B * Tv^2 * mol.mass)
+    else
+        if mol.anharmonic == false || !vd.use_Treanor
+            avg_evib_sq = sum(mol.vibrational_energy .* mol.vibrational_energy .* x_i)
+            return (avg_evib_sq - Ev^2) / (k_B * Tv^2 * mol.mass)
+        else
+            if T >= Tv
+                avg_i = sum(mol.vibrational_levels .* x_i)
+                avg_i_ve = sum(mol.vibrational_levels .* mol.vibrational_energy .* x_i)
+            else
+                maxlevel = compute_max_vibr_level(mol, T, Tv)
+
+                avg_i = sum(mol.vibrational_levels[1:maxlevel] .* x_i[1:maxlevel])
+                avg_i_ve = sum(mol.vibrational_levels[1:maxlevel] .* mol.vibrational_energy[1:maxlevel] .* x_i[1:maxlevel])
+                
+                if vd.continue_Treanor_with_Boltzmann && (maxlevel + 1 <= mol.n_vibr)
+                    avg_i += sum(mol.vibrational_energy[maxlevel + 1:end] .* x_i[maxlevel + 1:end]) / mol.vibr_energy1
+                    avg_i_ve += sum(mol.vibrational_energy[maxlevel + 1:end] .* mol.vibrational_energy[maxlevel + 1:end] .* x_i[maxlevel + 1:end]) / mol.vibr_energy1
+                end
+            end
+        end
+
+        return mol.vibr_energy1 * (avg_i_ve - avg_i * Ev) / (k_B * Tv^2 * mol.mass)
     end
-
-    avg_i /= Zv
-    avg_i_ve /= Zv
-
-    return mol.vibr_energy1 * (avg_i_ve - avg_i * Ev) / (k_B * Tv^2 * mol.mass)
 end
 
 
