@@ -66,11 +66,14 @@ function compute_mixture!(mixture::Mixture, T, Tv::Array{typeof(1.0u"K"),1}, n_a
             mixture.Ev[i] = compute_E_vibr(mol, mixture.vibrational_distribution, T, T, mixture.Zv[i])
             mixture.c_vibr_equilibrium[i] = compute_c_vibr_equilibrium(mol, mixture.vibrational_distribution, T, T, mixture.Zv[i], mixture.Ev[i])
         end
+
         mixture.Zv[i] = compute_Z_vibr(mol, mixture.vibrational_distribution, T, Tv[i])
-        mixture.Ev[i] = compute_E_vibr(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i])
+        x_i = compute_xi_vibr(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i])
+        mixture.Ev[i] = compute_E_vibr(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i], x_i)
 
         mixture.c_rot[i] = compute_c_rot(mol, T, mixture.Zr[i], mixture.Er[i])
-        mixture.c_vibrT[i] = compute_c_vibrT(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i], mixture.Ev[i])
+        mixture.c_vibrT[i] = compute_c_vibrT(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i], mixture.Ev[i], x_i)
+        mixture.c_vibrTv[i] = compute_c_vibrTv(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i], mixture.Ev[i], x_i)
     end
 
     (mixture.c_v, mixture.c_p) = compute_c_v_and_c_p(T, mixture.atoms, mixture.molecules, n_atom, n_molecule, mixture.c_rot, mixture.c_vibrT, mixture.n, mixture.rho)
