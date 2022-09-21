@@ -228,19 +228,28 @@ function compute_c_v_and_c_p(T,
                      atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
                      atom_n_arr::Array{typeof(1.0u"m^-3"),1}, mol_n_arr::Array{typeof(1.0u"m^-3"),1},
                      crot_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1},
-                     cvibrT_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1})
+                     cvibrT_arr::Array{typeof(1.0u"J * K^-1 * kg^-1"),1},
+                     n_tot::Union{typeof(1.0u"m^-3"),Nothing}=nothing,
+                     rho::Union{typeof(1.0u"kg * m^-3"),Nothing}=nothing)
 
-    rho = 0.0u"kg * m^-3"
-
-    n_tot = sum(atom_n_arr) + sum(mol_n_arr)
-    c_v = 0.0u"J * m^-3 * K^-1"
-
-    for (atom, n) in zip(atom_arr, atom_n_arr)
-        rho += atom.mass * n
+    if n_tot === nothing
+        n_tot = sum(atom_n_arr) + sum(mol_n_arr)
     end
 
+    if rho === nothing
+        rho = 0.0u"kg * m^-3"
+        for (atom, n) in zip(atom_arr, atom_n_arr)
+            rho += atom.mass * n
+        end
+
+        for (mol, n) in zip(mol_arr, mol_n_arr)
+            rho += mol.mass * n
+        end
+    end
+
+    c_v = 0.0u"J * m^-3 * K^-1"
+
     for (mol, n, crot, cvibr) in zip(mol_arr, mol_n_arr, crot_arr, cvibrT_arr)
-        rho += mol.mass * n
         c_v += mol.mass * n * (crot + cvibr)
     end
 
@@ -364,20 +373,32 @@ end
 
 function compute_U_and_h(T, atom_arr::Array{Atom,1}, mol_arr::Array{Molecule,1},
                         atom_n_arr::Array{typeof(1.0u"m^-3"),1}, mol_n_arr::Array{typeof(1.0u"m^-3"),1},
-                        Erot_arr::Array{typeof(1.0u"J"),1}, Evibr_arr::Array{typeof(1.0u"J"),1})
+                        Erot_arr::Array{typeof(1.0u"J"),1}, Evibr_arr::Array{typeof(1.0u"J"),1},
+                        n_tot::Union{typeof(1.0u"m^-3"),Nothing}=nothing,
+                        rho::Union{typeof(1.0u"kg * m^-3"),Nothing}=nothing)
+
+    if n_tot === nothing
+        n_tot = sum(atom_n_arr) + sum(mol_n_arr)
+    end
+
+    if rho === nothing
+        rho = 0.0u"kg * m^-3"
+        for (atom, n) in zip(atom_arr, atom_n_arr)
+            rho += atom.mass * n
+        end
+
+        for (mol, n) in zip(mol_arr, mol_n_arr)
+            rho += mol.mass * n
+        end
+    end
+
     U = 0.0u"J * m^-3"
 
-    rho = 0.0u"kg * m^-3"
-
-    n_tot = sum(atom_n_arr) + sum(mol_n_arr)
-
     for (atom, n) in zip(atom_arr, atom_n_arr)
-        rho += atom.mass * n
         U += atom.formation_energy * n
     end
 
     for (mol, n, Erot, Evibr) in zip(mol_arr, mol_n_arr, Erot_arr, Evibr_arr)
-        rho += mol.mass * n
         U += (mol.formation_energy + Erot + Evibr) * n
     end
 

@@ -73,14 +73,14 @@ function compute_mixture!(mixture::Mixture, T, Tv::Array{typeof(1.0u"K"),1}, n_a
         mixture.c_vibrT[i] = compute_c_vibrT(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i], mixture.Ev[i])
     end
 
-    (mixture.c_v, mixture.c_p) = compute_c_v_and_c_p(T, mixture.atoms, mixture.molecules, n_atom, n_molecule, mixture.c_rot, mixture.c_vibrT)
-    (mixture.U, mixture.h) = compute_U_and_h(T, mixture.atoms, mixture.molecules, n_atom, n_molecule, mixture.Er, mixture.Ev)
+    (mixture.c_v, mixture.c_p) = compute_c_v_and_c_p(T, mixture.atoms, mixture.molecules, n_atom, n_molecule, mixture.c_rot, mixture.c_vibrT, mixture.n, mixture.rho)
+    (mixture.U, mixture.h) = compute_U_and_h(T, mixture.atoms, mixture.molecules, n_atom, n_molecule, mixture.Er, mixture.Ev, mixture.n, mixture.rho)
 
     if compute_equilibrium
         if use_gupta_yos
             (mixture.c_v_equilibrium, mixture.c_p_equilibrium) = compute_c_v_and_c_p_equilibrium_gupta_yos(T, mixture.atoms, mixture.molecules, n_atom, n_molecule, mixture.c_rot, mixture.c_vibrT)
         else
-            (mixture.c_v_equilibrium, mixture.c_p_equilibrium) = compute_c_v_and_c_p(T, mixture.atoms, mixture.molecules, n_atom, n_molecule, mixture.c_rot, mixture.c_vibr_equilibrium)
+            (mixture.c_v_equilibrium, mixture.c_p_equilibrium) = compute_c_v_and_c_p(T, mixture.atoms, mixture.molecules, n_atom, n_molecule, mixture.c_rot, mixture.c_vibr_equilibrium, mixture.n, mixture.rho)
         end
     end
 end
