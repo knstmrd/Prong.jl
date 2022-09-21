@@ -307,10 +307,10 @@ end
         atom = create_atom("data/particles.yaml", atomname)
 
         # in a Treanor distribution it's more complicated, because both T and Tv appear in the distribution
-        # for a harmonic oscillator everything's nice though, and we're testing thermal equilibrium here
-        mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
+        # for a harmonic oscillator (or harmonic oscillator + Boltzmann) everything's nice though, and we're testing thermal equilibrium here
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=true)
 
-        vd = create_vibrational_distribution(false, false, false)
+        vd = create_vibrational_distribution(true, false, false)
 
         mixture = create_mixture([atom], [mol], vd)
         for T in T_arr
