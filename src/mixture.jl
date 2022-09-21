@@ -23,6 +23,9 @@ mutable struct Mixture
     c_vibr_equilibrium::Array{typeof(1.0u"J * K^-1 * kg^-1"),1}
     c_v_equilibrium::typeof(1.0u"J * K^-1 * kg^-1")
     c_p_equilibrium::typeof(1.0u"J * K^-1 * kg^-1")
+
+    n::typeof(1.0u"m^-3")  # total number density
+    rho::typeof(1.0u"kg * m^-3")  # density
 end
 
 function create_mixture(atoms, molecules, vd)
@@ -36,11 +39,24 @@ function create_mixture(atoms, molecules, vd)
     0.0u"J * K^-1 * kg^-1", # c_p
     0.0u"J * kg^-1", 0.0u"J * kg^-1", #U, h
     zeros(typeof(1.0u"J * K^-1 * kg^-1"), length(molecules)), # c_vibr(equilibrium)
-    0.0u"J * K^-1 * kg^-1", 0.0u"J * K^-1 * kg^-1") # c_v_equilibrium, c_p_equilibrium
+    0.0u"J * K^-1 * kg^-1", 0.0u"J * K^-1 * kg^-1", # c_v_equilibrium, c_p_equilibrium
+    0.0u"m^-3", 0.0u"kg * m^-3") 
 end
 
 function compute_mixture!(mixture::Mixture, T, Tv::Array{typeof(1.0u"K"),1}, n_atom::Array{typeof(1.0u"m^-3"),1}, n_molecule::Array{typeof(1.0u"m^-3"),1};
                           compute_equilibrium=false, use_gupta_yos=false)
+
+    mixture.n = sum(n_atom) + sum(n_molecule)
+
+    mixture.rho = 0.0u"kg * m^-3"
+
+    for (i, atom) in enumerate(mixture.atoms)
+        mixture.rho += n_atom[i] * atom.mass
+    end
+    for (i, mol) in enumerate(mixture.molecules)
+        mixture.rho += n_molecule[i] * mol.mass
+    end
+
     for (i, mol) in enumerate(mixture.molecules)
         mixture.Zr[i] = compute_Z_rot(mol, T)
         mixture.Er[i] = compute_E_rot(mol, T, mixture.Zr[i])

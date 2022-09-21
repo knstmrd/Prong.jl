@@ -346,3 +346,32 @@ end
         end
     end
 end
+
+@testset "mixture densities" begin
+
+    n = 1e23u"m^-3"
+
+    T = 1000.0u"K"
+    rtol = 1.0e-6
+
+    for (atomname, molname) in zip(["N", "O", "N"], ["N2", "O2", "NO"])
+        atom = create_atom("data/particles.yaml", atomname)
+
+        # in a Treanor distribution it's more complicated, because both T and Tv appear in the distribution
+        # for a harmonic oscillator everything's nice though, and we're testing thermal equilibrium here
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
+
+        vd = create_vibrational_distribution(false, false, false)
+
+        mixture = create_mixture([atom], [mol], vd)
+        
+
+        for x_atom in [0.0, 0.25, 0.5, 1.0]
+            compute_mixture!(mixture, T, [T], [n * x_atom], [(1.0 - x_atom) * n])
+            rho = atom.mass * n * x_atom + mol.mass * (1.0 - x_atom) * n
+
+            @test true == isapprox(mixture.n, n, rtol=rtol)
+            @test true == isapprox(mixture.rho, rho, rtol=rtol)
+        end
+    end
+end
