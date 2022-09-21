@@ -319,6 +319,7 @@ end
             Er_arrm = [compute_E_rot(mol, T - ΔT, Zrm)]
             Zvm = compute_Z_vibr(mol, vd, T - ΔT, T - ΔT)
             Ev_arrm = [compute_E_vibr(mol, vd, T - ΔT, T - ΔT, Zvm)]
+            cvT_m = [compute_c_vibrTv(mol, vd, T - ΔT, T - ΔT, Zvm[1], Ev_arrm[1])]
 
             Zrp = compute_Z_rot(mol, T + ΔT)
             Er_arrp = [compute_E_rot(mol, T + ΔT, Zrp)]
@@ -333,6 +334,7 @@ end
             crotarr = [compute_c_rot(mol, T, Zr, Er)]
             cvibrarr = [compute_c_vibrTv(mol, vd, T, T, Zv, Ev)]
 
+
             for x_atom in [0.0, 0.25, 0.5, 1.0]
                 U_h_1 = compute_U_and_h(T - ΔT, [atom], [mol], [n * x_atom], [(1.0 - x_atom) * n], Er_arrm, Ev_arrm)
                 U_h_2 = compute_U_and_h(T + ΔT, [atom], [mol], [n * x_atom], [(1.0 - x_atom) * n], Er_arrp, Ev_arrp)
@@ -340,8 +342,11 @@ end
                 c_v_c_p = compute_c_v_and_c_p(T, [atom], [mol], [n * x_atom], [(1.0 - x_atom) * n], crotarr, cvibrarr)
 
                 compute_mixture!(mixture, T - ΔT, [T - ΔT], [n * x_atom], [(1.0 - x_atom) * n])
+                
                 @test true == isapprox(c_v_c_p[1], (U_h_2[1] - U_h_1[1]) / (2 * ΔT), rtol=rtol)
                 @test true == isapprox(mixture.U, U_h_1[1], rtol=rtol_mix)
+                @test true == isapprox(mixture.c_rot[1], crotarr[1], rtol=rtol_mix)
+                @test true == isapprox(mixture.c_vibrTv[1], cvT_m[1], rtol=rtol_mix)
             end
         end
     end
