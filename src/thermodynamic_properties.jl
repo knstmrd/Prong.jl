@@ -3,6 +3,42 @@ using PhysicalConstants.CODATA2018: k_B
 include("utils.jl")
 
 
+function compute_Z_and_xi_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv)
+    if mol.anharmonic == false || !vd.use_Treanor
+        x_i = exp.(-mol.vibrational_energy ./ (k_B * Tv))
+        Zv = sum(x_i)
+        return x_i / Zv, Zv
+    else
+        if T >= Tv
+            x_i = exp.(-mol.Δvibrational_anharmonic ./ (k_B * T)
+            .- mol.vibrational_levels_mult1 ./ (k_B * Tv))
+            Zv = sum(exp.(-mol.Δvibrational_anharmonic ./ (k_B * T)
+                       .- mol.vibrational_levels_mult1 ./ (k_B * Tv)))
+            Zv = sum(x_i)
+            return x_i / Zv, Zv
+        else
+            maxlevel = compute_max_vibr_level(mol, T, Tv)
+
+            if vd.continue_Treanor_with_Boltzmann
+                res = zeros(mol.n_vibr)
+
+                res[1:maxlevel] .= exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                        .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
+                if maxlevel + 1 <= mol.n_vibr
+                    res[maxlevel + 1:end] .= exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))
+                end
+                Zv = sum(res)
+                return res ./ Zv, Zv
+            else
+                res = exp.(-mol.Δvibrational_anharmonic[1:maxlevel] ./ (k_B * T)
+                .- mol.vibrational_levels_mult1[1:maxlevel] ./ (k_B * Tv))
+                Zv = sum(res)
+                return res ./ Zv, Zv
+            end
+        end
+    end
+end
+
 function compute_Z_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv)
     if mol.anharmonic == false || !vd.use_Treanor
         return sum(exp.(-mol.vibrational_energy ./ (k_B * Tv)))
