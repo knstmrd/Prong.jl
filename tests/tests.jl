@@ -380,3 +380,99 @@ end
         end
     end
 end
+
+
+@testset "precomputed_distributions" begin
+
+    n = 1e23u"m^-3"
+
+    T_arr = [1000.0u"K", 4000.0u"K", 10000.0u"K"]
+    Tv_arr = [1000.0u"K", 4000.0u"K", 10000.0u"K"]
+    rtol = 1.0e-6
+
+    for molname in ["N2", "O2", "NO"]
+
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
+        vd = create_vibrational_distribution(false, false, false)
+
+        for T in T_arr
+            for Tv in Tv_arr
+                xi_vibr, Z1 = compute_Z_and_xi_vibr(mol, vd, T, Tv)
+                Z2 = compute_Z_vibr(mol, vd, T, Tv)
+
+                @test true == isapprox(Z1, Z2, rtol=rtol)
+
+                E1 = compute_E_vibr(mol, vd, T, Tv, Z1, xi_vibr)
+                E2 = compute_E_vibr(mol, vd, T, Tv, Z2)
+                @test true == isapprox(E1, E2, rtol=rtol)
+
+                cv_Tv1 = compute_c_vibrTv(mol, vd, T, Tv, Z1, E1, xi_vibr)
+                cv_Tv2 = compute_c_vibrTv(mol, vd, T, Tv, Z2, E2)
+                @test true == isapprox(cv_Tv1, cv_Tv2, rtol=rtol)
+            end
+        end
+
+
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=true)
+        vd = create_vibrational_distribution(true, false, false)
+
+        for T in T_arr
+            for Tv in Tv_arr
+                xi_vibr, Z1 = compute_Z_and_xi_vibr(mol, vd, T, Tv)
+                Z2 = compute_Z_vibr(mol, vd, T, Tv)
+                
+                @test true == isapprox(Z1, Z2, rtol=rtol)
+
+                E1 = compute_E_vibr(mol, vd, T, Tv, Z1, xi_vibr)
+                E2 = compute_E_vibr(mol, vd, T, Tv, Z2)
+                @test true == isapprox(E1, E2, rtol=rtol)
+
+                cv_Tv1 = compute_c_vibrTv(mol, vd, T, Tv, Z1, E1, xi_vibr)
+                cv_Tv2 = compute_c_vibrTv(mol, vd, T, Tv, Z2, E2)
+                @test true == isapprox(cv_Tv1, cv_Tv2, rtol=rtol)
+            end
+        end
+
+
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=true)
+        vd = create_vibrational_distribution(true, true, false)
+
+        for T in T_arr
+            for Tv in Tv_arr
+                xi_vibr, Z1 = compute_Z_and_xi_vibr(mol, vd, T, Tv)
+                Z2 = compute_Z_vibr(mol, vd, T, Tv)
+                
+                @test true == isapprox(Z1, Z2, rtol=rtol)
+                
+                E1 = compute_E_vibr(mol, vd, T, Tv, Z1, xi_vibr)
+                E2 = compute_E_vibr(mol, vd, T, Tv, Z2)
+                @test true == isapprox(E1, E2, rtol=rtol)
+
+                cv_Tv1 = compute_c_vibrTv(mol, vd, T, Tv, Z1, E1, xi_vibr)
+                cv_Tv2 = compute_c_vibrTv(mol, vd, T, Tv, Z2, E2)
+                @test true == isapprox(cv_Tv1, cv_Tv2, rtol=rtol)
+            end
+        end
+
+
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=true)
+        vd = create_vibrational_distribution(true, true, true)
+
+        for T in T_arr
+            for Tv in Tv_arr
+                xi_vibr, Z1 = compute_Z_and_xi_vibr(mol, vd, T, Tv)
+                Z2 = compute_Z_vibr(mol, vd, T, Tv)
+                
+                @test true == isapprox(Z1, Z2, rtol=rtol)
+                
+                E1 = compute_E_vibr(mol, vd, T, Tv, Z1, xi_vibr)
+                E2 = compute_E_vibr(mol, vd, T, Tv, Z2)
+                @test true == isapprox(E1, E2, rtol=rtol)
+
+                cv_Tv1 = compute_c_vibrTv(mol, vd, T, Tv, Z1, E1, xi_vibr)
+                cv_Tv2 = compute_c_vibrTv(mol, vd, T, Tv, Z2, E2)
+                @test true == isapprox(cv_Tv1, cv_Tv2, rtol=rtol)
+            end
+        end
+    end
+end
