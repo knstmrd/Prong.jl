@@ -67,8 +67,9 @@ function compute_mixture!(mixture::Mixture, T, Tv::Array{typeof(1.0u"K"),1}, n_a
             mixture.c_vibr_equilibrium[i] = compute_c_vibr_equilibrium(mol, mixture.vibrational_distribution, T, T, mixture.Zv[i], mixture.Ev[i])
         end
 
-        mixture.Zv[i] = compute_Z_vibr(mol, mixture.vibrational_distribution, T, Tv[i])
-        x_i = compute_xi_vibr(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i])
+        x_i, mixture.Zv[i] = compute_xi_and_Z_vibr(mol, mixture.vibrational_distribution, T, Tv[i])
+        # mixture.Zv[i] = compute_Z_vibr(mol, mixture.vibrational_distribution, T, Tv[i])
+        # x_i = compute_xi_vibr(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i])
         mixture.Ev[i] = compute_E_vibr(mol, mixture.vibrational_distribution, T, Tv[i], mixture.Zv[i], x_i)
 
         mixture.c_rot[i] = compute_c_rot(mol, T, mixture.Zr[i], mixture.Er[i])
