@@ -297,7 +297,7 @@ end
 @testset "mixture specific heats" begin
 
     T_arr = [500.0u"K", 5000.0u"K", 10000.0u"K"]
-    rtol = 0.01
+    rtol = 0.001
     ΔT = 0.05u"K"
     n = 1e23u"m^-3"
 
