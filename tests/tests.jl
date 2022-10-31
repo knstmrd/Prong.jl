@@ -397,7 +397,7 @@ end
 
         for T in T_arr
             for Tv in Tv_arr
-                xi_vibr, Z1 = compute_Z_and_xi_vibr(mol, vd, T, Tv)
+                xi_vibr, Z1 = compute_xi_and_Z_vibr(mol, vd, T, Tv)
                 Z2 = compute_Z_vibr(mol, vd, T, Tv)
 
                 @test true == isapprox(Z1, Z2, rtol=rtol)
@@ -418,7 +418,7 @@ end
 
         for T in T_arr
             for Tv in Tv_arr
-                xi_vibr, Z1 = compute_Z_and_xi_vibr(mol, vd, T, Tv)
+                xi_vibr, Z1 = compute_xi_and_Z_vibr(mol, vd, T, Tv)
                 Z2 = compute_Z_vibr(mol, vd, T, Tv)
                 
                 @test true == isapprox(Z1, Z2, rtol=rtol)
@@ -439,7 +439,7 @@ end
 
         for T in T_arr
             for Tv in Tv_arr
-                xi_vibr, Z1 = compute_Z_and_xi_vibr(mol, vd, T, Tv)
+                xi_vibr, Z1 = compute_xi_and_Z_vibr(mol, vd, T, Tv)
                 Z2 = compute_Z_vibr(mol, vd, T, Tv)
                 
                 @test true == isapprox(Z1, Z2, rtol=rtol)
@@ -460,7 +460,7 @@ end
 
         for T in T_arr
             for Tv in Tv_arr
-                xi_vibr, Z1 = compute_Z_and_xi_vibr(mol, vd, T, Tv)
+                xi_vibr, Z1 = compute_xi_and_Z_vibr(mol, vd, T, Tv)
                 Z2 = compute_Z_vibr(mol, vd, T, Tv)
                 
                 @test true == isapprox(Z1, Z2, rtol=rtol)

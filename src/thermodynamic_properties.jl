@@ -3,7 +3,7 @@ using PhysicalConstants.CODATA2018: k_B
 include("utils.jl")
 
 
-function compute_Z_and_xi_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv)
+function compute_xi_and_Z_vibr(mol::Molecule, vd::VibrationalDistribution, T, Tv)
     if mol.anharmonic == false || !vd.use_Treanor
         x_i = exp.(-mol.vibrational_energy ./ (k_B * Tv))
         Zv = sum(x_i)
