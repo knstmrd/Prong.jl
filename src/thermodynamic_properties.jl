@@ -24,7 +24,7 @@ function compute_xi_and_Z_vibr!(mol::Molecule, vd::VibrationalDistribution, T, T
                 if maxlevel + 1 <= mol.n_vibr
                     x_i[maxlevel + 1:end] .= exp.(-mol.vibrational_energy[maxlevel + 1:end] ./ (k_B * Tv))
                 end
-                Zv = sum(res)
+                Zv = sum(x_i)
                 x_i ./= Zv
                 return Zv
             else
@@ -32,7 +32,7 @@ function compute_xi_and_Z_vibr!(mol::Molecule, vd::VibrationalDistribution, T, T
                 if maxlevel + 1 <= mol.n_vibr
                     x_i[maxlevel + 1:end] .= 0.0
                 end
-                Zv = sum(res)
+                Zv = sum(x_i)
                 x_i ./= Zv
                 return Zv
             end
