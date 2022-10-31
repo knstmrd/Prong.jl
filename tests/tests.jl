@@ -479,7 +479,7 @@ end
 
 
 
-@testset "precomputed_distributions" begin
+@testset "in-place compute of vibrational distributions" begin
 
     n = 1e23u"m^-3"
 
@@ -489,16 +489,59 @@ end
 
     for molname in ["N2", "O2", "NO"]
 
-        mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
-        vd = create_vibrational_distribution(false, false, false)
-
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=true)
+        vd = create_vibrational_distribution(true, false, false)
         x_i = zeros(Float64, mol.n_vibr)
+
         for T in T_arr
             for Tv in Tv_arr
                 Zv_inplace = compute_xi_and_Z_vibr!(mol::Molecule, vd::VibrationalDistribution, T, Tv, x_i)
                 x_i2, Zv2 = compute_xi_and_Z_vibr(mol, vd, T, Tv)
 
                 @test true == isapprox(Zv_inplace, Zv2, rtol=rtol)
+                for i in eachindex(x_i)
+                    if i > length(x_i2)
+                        @test 0.0 == x_i[i]
+                    else
+                        @test true == isapprox(x_i[i], x_i2[i], rtol=rtol)
+                    end
+                end
+            end
+        end
+
+
+        vd = create_vibrational_distribution(true, true, false)
+        for T in T_arr
+            for Tv in Tv_arr
+                Zv_inplace = compute_xi_and_Z_vibr!(mol::Molecule, vd::VibrationalDistribution, T, Tv, x_i)
+                x_i2, Zv2 = compute_xi_and_Z_vibr(mol, vd, T, Tv)
+
+                @test true == isapprox(Zv_inplace, Zv2, rtol=rtol)
+                for i in eachindex(x_i)
+                    if i > length(x_i2)
+                        @test 0.0 == x_i[i]
+                    else
+                        @test true == isapprox(x_i[i], x_i2[i], rtol=rtol)
+                    end
+                end
+            end
+        end
+
+
+        vd = create_vibrational_distribution(true, true, true)
+        for T in T_arr
+            for Tv in Tv_arr
+                Zv_inplace = compute_xi_and_Z_vibr!(mol::Molecule, vd::VibrationalDistribution, T, Tv, x_i)
+                x_i2, Zv2 = compute_xi_and_Z_vibr(mol, vd, T, Tv)
+
+                @test true == isapprox(Zv_inplace, Zv2, rtol=rtol)
+                for i in eachindex(x_i)
+                    if i > length(x_i2)
+                        @test 0.0 == x_i[i]
+                    else
+                        @test true == isapprox(x_i[i], x_i2[i], rtol=rtol)
+                    end
+                end
             end
         end
     end
