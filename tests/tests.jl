@@ -476,3 +476,30 @@ end
         end
     end
 end
+
+
+
+@testset "precomputed_distributions" begin
+
+    n = 1e23u"m^-3"
+
+    T_arr = [1000.0u"K", 4000.0u"K", 10000.0u"K"]
+    Tv_arr = [1000.0u"K", 4000.0u"K", 10000.0u"K"]
+    rtol = 1.0e-6
+
+    for molname in ["N2", "O2", "NO"]
+
+        mol = create_molecule("data/particles.yaml", molname, anharmonic=false)
+        vd = create_vibrational_distribution(false, false, false)
+
+        x_i = zeros(Float64, mol.n_vibr)
+        for T in T_arr
+            for Tv in Tv_arr
+                Zv_inplace = compute_xi_and_Z_vibr!(mol::Molecule, vd::VibrationalDistribution, T, Tv, x_i)
+                x_i2, Zv2 = compute_xi_and_Z_vibr(mol, vd, T, Tv)
+
+                @test true == isapprox(Zv_inplace, Zv2, rtol=rtol)
+            end
+        end
+    end
+end
